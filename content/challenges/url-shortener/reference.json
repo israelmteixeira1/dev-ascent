@@ -1,0 +1,56 @@
+{
+  "challengeSlug": "url-shortener",
+  "graph": {
+    "schemaVersion": 1,
+    "nodes": [
+      {
+        "id": "ref-us-users",
+        "kind": "client",
+        "label": "Users",
+        "position": { "x": 0, "y": 120 },
+        "props": { "replicas": 1 }
+      },
+      {
+        "id": "ref-us-lb",
+        "kind": "load_balancer",
+        "label": "Load balancer",
+        "position": { "x": 220, "y": 120 },
+        "props": { "replicas": 1 }
+      },
+      {
+        "id": "ref-us-redirect",
+        "kind": "service",
+        "label": "Redirect service",
+        "position": { "x": 440, "y": 120 },
+        "props": { "replicas": 20, "notes": "Stateless; looks the short code up in the cache first (cache-aside)." }
+      },
+      {
+        "id": "ref-us-cache",
+        "kind": "cache",
+        "label": "URL cache",
+        "position": { "x": 680, "y": 0 },
+        "props": { "replicas": 2, "notes": "Hot links stay in memory; mappings never change, so a long TTL is safe." }
+      },
+      {
+        "id": "ref-us-store",
+        "kind": "nosql_database",
+        "label": "URL store",
+        "position": { "x": 680, "y": 240 },
+        "props": { "replicas": 2, "notes": "Key-value by short code; a replica keeps reads up when one node fails." }
+      }
+    ],
+    "edges": [
+      { "id": "ref-us-e1", "source": "ref-us-users", "target": "ref-us-lb", "kind": "sync", "intent": "all" },
+      { "id": "ref-us-e2", "source": "ref-us-lb", "target": "ref-us-redirect", "kind": "sync", "intent": "all" },
+      {
+        "id": "ref-us-e3",
+        "source": "ref-us-redirect",
+        "target": "ref-us-cache",
+        "kind": "sync",
+        "intent": "cache_aside",
+        "label": "GET code"
+      },
+      { "id": "ref-us-e4", "source": "ref-us-redirect", "target": "ref-us-store", "kind": "sync", "intent": "all" }
+    ]
+  }
+}

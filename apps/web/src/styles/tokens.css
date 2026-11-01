@@ -1,0 +1,55 @@
+/*
+ * Semantic tokens. One accent colour; every text/background pair keeps at least 4.5:1 contrast.
+ * Dark mode is prepared here but not exposed in the UI yet.
+ */
+:root {
+  --color-bg: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef0f3;
+  --color-text: #16181d;
+  --color-text-muted: #4f5561;
+  --color-border: #d7dae0;
+  --color-accent: #4338ca;
+  --color-accent-soft: #e8e7fb;
+  --color-on-accent: #ffffff;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-success: #0b6b3a;
+  --color-success-soft: #e6f4ec;
+  --color-warning: #8a4b00;
+  --color-warning-soft: #fdf3e4;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Menlo, Consolas, monospace;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.1);
+  --shadow-md: 0 8px 24px rgb(16 24 40 / 0.14);
+}
+
+[data-theme='dark'] {
+  --color-bg: #111318;
+  --color-surface: #1a1d24;
+  --color-surface-muted: #232733;
+  --color-text: #eceef2;
+  --color-text-muted: #a9b0bd;
+  --color-border: #343a46;
+  --color-accent: #a5a1ff;
+  --color-accent-soft: #2a2950;
+  --color-on-accent: #111318;
+  --color-danger: #ff8a80;
+  --color-danger-soft: #3a1f1f;
+  --color-success: #6fd69a;
+  --color-success-soft: #173326;
+  --color-warning: #f5b85c;
+  --color-warning-soft: #3a2c16;
+}

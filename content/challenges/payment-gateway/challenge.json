@@ -1,0 +1,43 @@
+{
+  "slug": "payment-gateway",
+  "title": "Payment gateway",
+  "difficulty": "hard",
+  "summary": "Authorise card payments for online merchants without ever charging anyone twice.",
+  "context": "You are building the payment gateway behind an online checkout. Merchants call your API to charge a card; you authorise the payment with an external card acquirer and tell the merchant the outcome, both in the response and later through a webhook. Networks are unreliable, merchants retry, and acquirers are slow and sometimes down. Every payment must be recorded exactly once so that money can be reconciled at the end of the day, and raw card numbers must stay inside a small PCI-compliant zone.",
+  "functionalRequirements": [
+    "Merchants create a payment with an idempotency key; retrying with the same key never charges twice.",
+    "Authorise the payment synchronously with an external acquirer and return the result.",
+    "Outside the PCI zone, card data exists only as tokens.",
+    "Record every payment and every state change in a ledger.",
+    "Notify the merchant through a webhook, retrying until it is acknowledged.",
+    "Merchants can query the status of a payment."
+  ],
+  "workload": { "peakRps": 2000, "readRatio": 0.2 },
+  "scenario": { "external": { "latencyMs": 300, "availability": 0.998 } },
+  "goals": [
+    { "metric": "served_rps", "target": 2000 },
+    { "metric": "p99_write_ms", "target": 1000 },
+    { "metric": "availability", "target": 0.9995 }
+  ],
+  "requiredDependencies": [
+    { "kinds": ["external"], "trafficClass": "write", "name": "payment acquirer" },
+    { "kinds": ["ledger", "sql_database"], "trafficClass": "write", "name": "a ledger recording every payment" }
+  ],
+  "assumptions": [
+    "Peak traffic is 2,000 requests per second: 80% are new payments (writes) and 20% are status queries (reads).",
+    "Each external provider answers in about 300 ms and is available 99.8% of the time.",
+    "The checkout waits for the authorisation result; webhooks and reconciliation can happen later.",
+    "Daily reconciliation compares the ledger with the acquirer's settlement file."
+  ],
+  "competencies": [
+    "idempotency",
+    "ledger",
+    "reconciliation",
+    "tokenization",
+    "webhooks",
+    "failover",
+    "queues",
+    "timeouts-and-retries"
+  ],
+  "suggestedMinutes": 45
+}

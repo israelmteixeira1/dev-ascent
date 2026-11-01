@@ -1,0 +1,45 @@
+[
+  {
+    "slug": "system-design",
+    "name": "System Design",
+    "children": [
+      {
+        "slug": "scalability",
+        "name": "Scalability",
+        "children": [
+          { "slug": "load-balancing", "name": "Load balancing" },
+          { "slug": "caching", "name": "Caching" },
+          { "slug": "replication", "name": "Replication" },
+          { "slug": "partitioning", "name": "Partitioning" }
+        ]
+      },
+      {
+        "slug": "reliability",
+        "name": "Reliability",
+        "children": [
+          { "slug": "redundancy", "name": "Redundancy" },
+          { "slug": "failover", "name": "Failover" },
+          { "slug": "timeouts-and-retries", "name": "Timeouts and retries" }
+        ]
+      },
+      {
+        "slug": "async-processing",
+        "name": "Asynchronous processing",
+        "children": [
+          { "slug": "queues", "name": "Queues" },
+          { "slug": "webhooks", "name": "Webhooks" }
+        ]
+      },
+      {
+        "slug": "payments",
+        "name": "Payments",
+        "children": [
+          { "slug": "idempotency", "name": "Idempotency" },
+          { "slug": "ledger", "name": "Ledger" },
+          { "slug": "reconciliation", "name": "Reconciliation" },
+          { "slug": "tokenization", "name": "Tokenization and PCI scope" }
+        ]
+      }
+    ]
+  }
+]

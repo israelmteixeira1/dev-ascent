@@ -1,0 +1,6 @@
+docs/
+.vibe-wise/
+.superpowers/
+dist/
+coverage/
+pnpm-lock.yaml
