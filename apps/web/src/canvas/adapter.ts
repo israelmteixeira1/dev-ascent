@@ -1,4 +1,4 @@
-import type { Edge, Node, NodeChange } from '@xyflow/react';
+import { MarkerType, type Edge, type Node, type NodeChange } from '@xyflow/react';
 import type { ArchitectureGraph, GraphEdge, GraphNode, NodeKind } from '@devascent/domain';
 import { updateNode } from './commands';
 import type { Size } from './placement';
@@ -44,11 +44,12 @@ export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: 
 
   const edges = graph.edges.map((e): FlowEdge => ({
     id: e.id,
+    type: 'intent',
     source: e.source,
     target: e.target,
     data: { edge: e },
     selected: view.selectedIds.has(e.id),
-    ...(e.label ? { label: e.label } : {}),
+    markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 },
   }));
 
   return { nodes, edges };

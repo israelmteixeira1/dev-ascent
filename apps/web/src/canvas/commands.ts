@@ -1,4 +1,13 @@
-import { NODE_TYPES, type ArchitectureGraph, type GraphNode, type NodeKind } from '@devascent/domain';
+import {
+  NODE_TYPES,
+  allowedIntents,
+  canConnect,
+  defaultEdgeFor,
+  type ArchitectureGraph,
+  type GraphEdge,
+  type GraphNode,
+  type NodeKind,
+} from '@devascent/domain';
 import { sizeOf, type XY } from './placement';
 
 // Pure graph operations: every function returns a new graph and never mutates its input.
@@ -23,6 +32,42 @@ export function updateNode(graph: ArchitectureGraph, id: string, patch: NodePatc
   return {
     ...graph,
     nodes: graph.nodes.map((n) => (n.id === id ? { ...n, ...patch, props: { ...n.props, ...patch.props } } : n)),
+  };
+}
+
+/** Creates an edge with the default type and intent for the pair; absurd connections leave the graph unchanged. */
+export function connectNodes(
+  graph: ArchitectureGraph,
+  sourceId: string,
+  targetId: string,
+  id: string,
+): ArchitectureGraph {
+  if (!canConnect(graph, sourceId, targetId).ok) return graph;
+  const kindOf = (nodeId: string) => graph.nodes.find((n) => n.id === nodeId)!.kind;
+  const edge: GraphEdge = {
+    id,
+    source: sourceId,
+    target: targetId,
+    ...defaultEdgeFor(kindOf(sourceId), kindOf(targetId)),
+  };
+  return { ...graph, edges: [...graph.edges, edge] };
+}
+
+export type EdgePatch = Partial<Pick<GraphEdge, 'kind' | 'intent' | 'label'>>;
+
+export function updateEdge(graph: ArchitectureGraph, id: string, patch: EdgePatch): ArchitectureGraph {
+  const kindOf = (nodeId: string) => graph.nodes.find((n) => n.id === nodeId)?.kind;
+  return {
+    ...graph,
+    edges: graph.edges.map((e) => {
+      if (e.id !== id) return e;
+      const { label: _label, ...next } = { ...e, ...patch };
+      const source = kindOf(e.source);
+      const target = kindOf(e.target);
+      if (source && target && !allowedIntents(source, target).includes(next.intent)) next.intent = 'all';
+      const label = (patch.label ?? e.label ?? '').trim();
+      return label ? { ...next, label } : next;
+    }),
   };
 }
 

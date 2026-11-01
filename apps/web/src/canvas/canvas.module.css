@@ -54,6 +54,83 @@
   border: 1.5px solid var(--color-accent);
 }
 
+/* Edges */
+
+.edgeLabel {
+  position: absolute;
+  padding: 1px 6px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  pointer-events: all;
+}
+
+/* Popovers */
+
+.popover {
+  position: fixed;
+  z-index: 200;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: 6px var(--space-2);
+  color: var(--color-text);
+  font: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.fieldLabel {
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fieldHint {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.radio {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: 14px;
+}
+
+.dangerButton {
+  justify-self: start;
+  padding: 4px var(--space-3);
+  color: var(--color-danger);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
 /* Toolbar */
 
 .toolbar {

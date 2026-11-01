@@ -7,14 +7,19 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  type Connection,
   type EdgeChange,
+  type EdgeMouseHandler,
+  type IsValidConnection,
   type NodeChange,
   type OnDelete,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { NodeKind } from '@devascent/domain';
+import { canConnect, type NodeKind } from '@devascent/domain';
 import { graphToFlow, nodeChangesToGraph, type FlowEdge, type FlowNode } from './adapter';
-import { addNode, removeElements } from './commands';
+import { addNode, connectNodes, removeElements, updateEdge } from './commands';
+import { EdgePopover } from './EdgePopover';
+import { EdgeEditorContext, IntentEdge } from './edges/IntentEdge';
 import type { GraphHistory } from './history';
 import { ArchitectureNode } from './nodes/ArchitectureNode';
 import { Palette } from './Palette';
@@ -23,6 +28,7 @@ import { isTypingTarget, shortcutToKind } from './shortcuts';
 import styles from './canvas.module.css';
 
 const nodeTypes = { arch: ArchitectureNode };
+const edgeTypes = { intent: IntentEdge };
 
 type Props = { history: GraphHistory };
 
@@ -52,8 +58,30 @@ function CanvasInner({ history }: Props) {
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [measured, setMeasured] = useState<ReadonlyMap<string, Size>>(() => new Map());
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [edgeEditor, setEdgeEditor] = useState<{ edgeId: string; anchor: DOMRect } | null>(null);
 
   const { nodes, edges } = useMemo(() => graphToFlow(graph, { selectedIds, measured }), [graph, selectedIds, measured]);
+
+  const onConnect = useCallback(
+    (connection: Connection) =>
+      commit((g) => connectNodes(g, connection.source, connection.target, crypto.randomUUID())),
+    [commit],
+  );
+
+  const isValidConnection: IsValidConnection<FlowEdge> = useCallback(
+    (connection) => canConnect(graph, connection.source, connection.target).ok,
+    [graph],
+  );
+
+  const openEdgeEditor = useCallback((edgeId: string, anchor: DOMRect) => setEdgeEditor({ edgeId, anchor }), []);
+  const closeEdgeEditor = useCallback(() => setEdgeEditor(null), []);
+  const onEdgeDoubleClick: EdgeMouseHandler<FlowEdge> = useCallback(
+    (event, edge) => openEdgeEditor(edge.id, new DOMRect(event.clientX, event.clientY, 0, 0)),
+    [openEdgeEditor],
+  );
+
+  const editedEdge = edgeEditor ? graph.edges.find((e) => e.id === edgeEditor.edgeId) : undefined;
+  const kindOf = (id: string) => graph.nodes.find((n) => n.id === id)?.kind ?? 'generic';
 
   const onNodesChange = useCallback(
     (changes: NodeChange<FlowNode>[]) => {
@@ -138,21 +166,43 @@ function CanvasInner({ history }: Props) {
 
   return (
     <div ref={wrapper} className={styles.canvas}>
-      <ReactFlow<FlowNode, FlowEdge>
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onDelete={onDelete}
-        connectionMode={ConnectionMode.Loose}
-        deleteKeyCode={['Delete', 'Backspace']}
-        minZoom={0.2}
-      >
-        <Background />
-        <Controls />
-        <MiniMap pannable zoomable />
-      </ReactFlow>
+      <EdgeEditorContext value={openEdgeEditor}>
+        <ReactFlow<FlowNode, FlowEdge>
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onDelete={onDelete}
+          onConnect={onConnect}
+          isValidConnection={isValidConnection}
+          onEdgeDoubleClick={onEdgeDoubleClick}
+          connectionMode={ConnectionMode.Loose}
+          deleteKeyCode={['Delete', 'Backspace']}
+          minZoom={0.2}
+        >
+          <Background />
+          <Controls />
+          <MiniMap pannable zoomable />
+        </ReactFlow>
+      </EdgeEditorContext>
+
+      {edgeEditor && editedEdge && (
+        <EdgePopover
+          key={editedEdge.id}
+          edge={editedEdge}
+          sourceKind={kindOf(editedEdge.source)}
+          targetKind={kindOf(editedEdge.target)}
+          anchor={edgeEditor.anchor}
+          onChange={(patch) => commit((g) => updateEdge(g, editedEdge.id, patch))}
+          onDelete={() => {
+            commit((g) => removeElements(g, [], [editedEdge.id]));
+            closeEdgeEditor();
+          }}
+          onClose={closeEdgeEditor}
+        />
+      )}
 
       <div className={styles.toolbar}>
         <button type="button" className={styles.toolbarButton} onClick={() => setPaletteOpen(true)}>
