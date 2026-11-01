@@ -27,6 +27,9 @@ export function CatalogPage() {
           </li>
         ))}
       </ul>
+      <p className={styles.section}>
+        <Link to="/system-design/how-simulation-works">How the simulation works</Link>
+      </p>
     </main>
   );
 }
