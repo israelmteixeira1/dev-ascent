@@ -1,4 +1,4 @@
-import { memo, useContext, useState } from 'react';
+import { memo, useContext } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Minus, NotebookPen, Plus } from 'lucide-react';
 import { GRAPH_LIMITS, NODE_TYPES } from '@devascent/domain';
@@ -11,8 +11,9 @@ import styles from '../canvas.module.css';
 const SIDES = [Position.Top, Position.Right, Position.Bottom, Position.Left];
 
 function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
-  const { onNodeChange, openNodeEditor } = useContext(NodeActionsContext);
-  const [editing, setEditing] = useState(false);
+  const { onNodeChange, openNodeEditor, renamingId, setRenamingId } = useContext(NodeActionsContext);
+  const editing = renamingId === id;
+  const setEditing = (on: boolean) => setRenamingId(on ? id : null);
   const { node, readOnly, metrics, isBottleneck } = data;
   const spec = NODE_TYPES[node.kind];
   const Icon = NODE_ICONS[node.kind];

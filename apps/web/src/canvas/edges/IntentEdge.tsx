@@ -50,18 +50,37 @@ function IntentEdgeView({ id, source, target, data, selected, markerEnd }: EdgeP
       />
       {text && (
         <EdgeLabelRenderer>
-          <button
-            type="button"
-            className={`${styles.edgeLabel} nodrag nopan`}
+          <EdgeLabelButton
+            text={text}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
-            title="Double-click to edit the connection"
-            onDoubleClick={(e) => openEditor(id, e.currentTarget.getBoundingClientRect())}
-          >
-            {text}
-          </button>
+            onOpen={(anchor) => openEditor(id, anchor)}
+          />
         </EdgeLabelRenderer>
       )}
     </>
+  );
+}
+
+/** A real button: click, Enter or Space opens the connection editor. */
+export function EdgeLabelButton({
+  text,
+  style,
+  onOpen,
+}: {
+  text: string;
+  style?: React.CSSProperties;
+  onOpen: (anchor: DOMRect) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`${styles.edgeLabel} nodrag nopan`}
+      style={style}
+      title="Edit the connection"
+      onClick={(e) => onOpen(e.currentTarget.getBoundingClientRect())}
+    >
+      {text}
+    </button>
   );
 }
 

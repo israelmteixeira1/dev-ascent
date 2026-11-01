@@ -15,9 +15,10 @@ import {
   type OnDelete,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { canConnect, type NodeKind, type SimulationOk } from '@devascent/domain';
+import { GRAPH_LIMITS, canConnect, type NodeKind, type SimulationOk } from '@devascent/domain';
 import { graphToFlow, nodeChangesToGraph, type FlowEdge, type FlowNode } from './adapter';
 import { addNode, applyNodeEdit, connectNodes, removeElements, updateEdge, type NodeEdit } from './commands';
+import { resolveDeletion, singleSelectedEdgeId, singleSelectedNodeId } from './selection';
 import { EdgePopover } from './EdgePopover';
 import { EdgeEditorContext, IntentEdge } from './edges/IntentEdge';
 import type { GraphHistory } from './history';
@@ -90,9 +91,15 @@ function CanvasInner({ history, simulation = null }: Props) {
   const [nodeEditor, setNodeEditor] = useState<{ nodeId: string; anchor: DOMRect } | null>(null);
   const closeNodeEditor = useCallback(() => setNodeEditor(null), []);
   const onNodeChange = useCallback((id: string, edit: NodeEdit) => commit((g) => applyNodeEdit(g, id, edit)), [commit]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const nodeActions: NodeActions = useMemo(
-    () => ({ onNodeChange, openNodeEditor: (nodeId, anchor) => setNodeEditor({ nodeId, anchor }) }),
-    [onNodeChange],
+    () => ({
+      onNodeChange,
+      openNodeEditor: (nodeId, anchor) => setNodeEditor({ nodeId, anchor }),
+      renamingId,
+      setRenamingId,
+    }),
+    [onNodeChange, renamingId],
   );
   const editedNode = nodeEditor ? graph.nodes.find((n) => n.id === nodeEditor.nodeId) : undefined;
 
@@ -123,15 +130,17 @@ function CanvasInner({ history, simulation = null }: Props) {
 
   const onDelete: OnDelete<FlowNode, FlowEdge> = useCallback(
     ({ nodes: deletedNodes, edges: deletedEdges }) => {
-      commit((g) =>
-        removeElements(
+      commit((g) => {
+        const { nodeIds, edgeIds } = resolveDeletion(
           g,
           deletedNodes.map((n) => n.id),
           deletedEdges.map((e) => e.id),
-        ),
-      );
+          selectedIds,
+        );
+        return removeElements(g, nodeIds, edgeIds);
+      });
     },
-    [commit],
+    [commit, selectedIds],
   );
 
   const addKind = useCallback(
@@ -164,6 +173,18 @@ function CanvasInner({ history, simulation = null }: Props) {
         redo();
         return;
       }
+      // F2: keyboard alternative to double-click, for the single selected node or edge.
+      if (e.key === 'F2') {
+        const nodeId = singleSelectedNodeId(graph, selectedIds);
+        const edgeId = singleSelectedEdgeId(graph, selectedIds);
+        if (nodeId) setRenamingId(nodeId);
+        else if (edgeId) {
+          const rect = wrapper.current?.getBoundingClientRect();
+          openEdgeEditor(edgeId, new DOMRect((rect?.left ?? 0) + (rect?.width ?? 0) / 2, (rect?.top ?? 0) + 80, 0, 0));
+        }
+        if (nodeId || edgeId) e.preventDefault();
+        return;
+      }
       if ((mod && key === 'k') || (!mod && e.key === '/')) {
         e.preventDefault();
         setPaletteOpen(true);
@@ -178,7 +199,7 @@ function CanvasInner({ history, simulation = null }: Props) {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [addKind, paletteOpen, redo, undo]);
+  }, [addKind, graph, openEdgeEditor, paletteOpen, redo, selectedIds, undo]);
 
   return (
     <div ref={wrapper} className={styles.canvas}>
@@ -241,7 +262,18 @@ function CanvasInner({ history, simulation = null }: Props) {
             Press <kbd className={styles.kbd}>/</kbd> to add a component, or use a shortcut:{' '}
             <kbd className={styles.kbd}>S</kbd> service, <kbd className={styles.kbd}>D</kbd> database,{' '}
             <kbd className={styles.kbd}>C</kbd> cache, <kbd className={styles.kbd}>Q</kbd> queue,{' '}
-            <kbd className={styles.kbd}>L</kbd> load balancer.
+            <kbd className={styles.kbd}>L</kbd> load balancer. <kbd className={styles.kbd}>F2</kbd> renames the
+            selection.
+          </p>
+        )}
+        {graph.nodes.length >= GRAPH_LIMITS.maxNodes && (
+          <p className={styles.hint} role="status">
+            Limit reached: a design holds up to {GRAPH_LIMITS.maxNodes} components.
+          </p>
+        )}
+        {graph.edges.length >= GRAPH_LIMITS.maxEdges && (
+          <p className={styles.hint} role="status">
+            Limit reached: a design holds up to {GRAPH_LIMITS.maxEdges} connections.
           </p>
         )}
       </div>

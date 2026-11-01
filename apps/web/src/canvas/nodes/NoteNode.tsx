@@ -1,4 +1,4 @@
-import { memo, useContext, useState } from 'react';
+import { memo, useContext } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { GRAPH_LIMITS } from '@devascent/domain';
 import type { FlowNode } from '../adapter';
@@ -7,8 +7,9 @@ import styles from '../canvas.module.css';
 
 /** Free text on the canvas. It has no handles and the simulation ignores it. */
 function NoteNodeView({ id, data, selected }: NodeProps<FlowNode>) {
-  const { onNodeChange } = useContext(NodeActionsContext);
-  const [editing, setEditing] = useState(false);
+  const { onNodeChange, renamingId, setRenamingId } = useContext(NodeActionsContext);
+  const editing = renamingId === id;
+  const setEditing = (on: boolean) => setRenamingId(on ? id : null);
   const { node, readOnly } = data;
   const text = node.props.notes ?? '';
 
@@ -31,7 +32,7 @@ function NoteNodeView({ id, data, selected }: NodeProps<FlowNode>) {
         />
       ) : (
         <p className={styles.noteText} onDoubleClick={() => !readOnly && setEditing(true)}>
-          {text || <span className={styles.notePlaceholder}>Double-click to write a note</span>}
+          {text || <span className={styles.notePlaceholder}>Double-click (or F2) to write a note</span>}
         </p>
       )}
     </div>

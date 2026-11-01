@@ -1,4 +1,4 @@
-import { memo, useContext, useState } from 'react';
+import { memo, useContext } from 'react';
 import { NodeResizer, type NodeProps } from '@xyflow/react';
 import { GRAPH_LIMITS } from '@devascent/domain';
 import type { FlowNode } from '../adapter';
@@ -7,8 +7,9 @@ import styles from '../canvas.module.css';
 
 /** A boundary such as "PCI zone" or "Region A". Membership is stored on each child (parentId). */
 function ZoneNodeView({ id, data, selected }: NodeProps<FlowNode>) {
-  const { onNodeChange } = useContext(NodeActionsContext);
-  const [editing, setEditing] = useState(false);
+  const { onNodeChange, renamingId, setRenamingId } = useContext(NodeActionsContext);
+  const editing = renamingId === id;
+  const setEditing = (on: boolean) => setRenamingId(on ? id : null);
   const { node, readOnly } = data;
 
   const finishRename = (value: string) => {

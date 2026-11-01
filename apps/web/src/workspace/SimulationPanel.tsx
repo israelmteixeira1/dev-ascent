@@ -19,6 +19,15 @@ const CAUSE_TEXT: Record<Bottleneck['cause'], string> = {
   availability: 'availability',
 };
 
+/** Opens in a new tab: navigating away would discard the attempt, which is only kept in memory. */
+function HelpLink() {
+  return (
+    <Link to="/system-design/how-simulation-works" target="_blank" rel="noopener noreferrer">
+      How the simulation works
+    </Link>
+  );
+}
+
 function formatActual(goal: GoalOutcome): string {
   if (goal.actual === null) return '—';
   if (goal.metric === 'served_rps') return formatRps(goal.actual);
@@ -36,7 +45,7 @@ export function SimulationPanel({ result, stale, labelOf }: Props) {
           Run the simulation to see how your design holds up at the challenge's peak load. It runs instantly in your
           browser and nothing is saved.
         </p>
-        <Link to="/system-design/how-simulation-works">How the simulation works</Link>
+        <HelpLink />
       </div>
     );
   }
@@ -141,8 +150,7 @@ export function SimulationPanel({ result, stale, labelOf }: Props) {
       )}
 
       <p className={styles.muted}>
-        A teaching model, not a benchmark.{' '}
-        <Link to="/system-design/how-simulation-works">How the simulation works</Link>
+        A teaching model, not a benchmark. <HelpLink />
       </p>
     </div>
   );

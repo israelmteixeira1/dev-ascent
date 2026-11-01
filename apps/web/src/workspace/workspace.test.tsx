@@ -11,6 +11,9 @@ import { Timer, formatClock } from './Timer';
 import { useActiveTimer } from './useActiveTimer';
 import { useUnsavedWarning } from './useUnsavedWarning';
 
+// The canvas (React Flow) is not what these tests are about, and it needs browser layout APIs.
+vi.mock('../canvas/Canvas', () => ({ Canvas: () => <div data-testid="canvas" /> }));
+
 const setVisibility = (state: DocumentVisibilityState) =>
   Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
 
@@ -101,6 +104,57 @@ describe('problem panel', () => {
     render(<ProblemPanel challenge={challenge} collapsed onToggle={vi.fn()} />);
     expect(screen.queryByText(challenge.context)).toBeNull();
     expect(screen.getByRole('button', { name: 'Show problem' })).toBeInTheDocument();
+  });
+});
+
+describe('workspace keeps the attempt (review findings 1 and 3)', () => {
+  const renderPractice = () =>
+    render(
+      <MemoryRouter initialEntries={['/system-design/url-shortener/practice']}>
+        <App />
+      </MemoryRouter>,
+    );
+  const resizeTo = (width: number) => {
+    window.innerWidth = width;
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+  };
+
+  it('a narrow window hides the canvas without losing the explanation', async () => {
+    const width = window.innerWidth;
+    resizeTo(1280);
+    renderPractice();
+    await userEvent.click(screen.getByRole('tab', { name: 'Explanation' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Explanation' }), 'Cache the hot links');
+    resizeTo(800);
+    expect(screen.getByText('The canvas needs a screen at least 1024px wide.')).toBeInTheDocument();
+    resizeTo(1280);
+    await userEvent.click(screen.getByRole('tab', { name: 'Explanation' }));
+    expect(screen.getByRole('textbox', { name: 'Explanation' })).toHaveValue('Cache the hot links');
+    resizeTo(width);
+  });
+
+  it('help opens in a new tab and leaving with work asks first', async () => {
+    resizeTo(1280);
+    renderPractice();
+    const expectNewTab = () => {
+      for (const link of screen.getAllByRole('link', { name: 'How the simulation works' })) {
+        expect(link).toHaveAttribute('target', '_blank');
+        expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      }
+    };
+    expectNewTab();
+    await userEvent.click(screen.getByRole('button', { name: /Run simulation/ }));
+    expect(screen.getByText(/Add a client/)).toBeInTheDocument();
+    expectNewTab();
+    await userEvent.click(screen.getByRole('tab', { name: 'Explanation' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Explanation' }), 'x');
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    await userEvent.click(screen.getByRole('link', { name: /URL shortener/ }));
+    expect(confirm).toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Explanation' })).toHaveValue('x');
+    confirm.mockRestore();
   });
 });
 

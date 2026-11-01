@@ -30,30 +30,39 @@ function useWindowWidth() {
 export function WorkspacePage() {
   const { slug = '' } = useParams();
   const challenge = getChallenge(slug);
-  const width = useWindowWidth();
   if (!challenge) return <NotFoundPage title="Challenge not found" />;
-  if (width < MIN_CANVAS_WIDTH) {
-    return (
-      <main className={styles.smallScreen}>
-        <h1>{challenge.title}</h1>
-        <p>The canvas needs a screen at least 1024px wide.</p>
-        <Link to={`/system-design/${challenge.slug}`}>Back to the problem</Link>
-      </main>
-    );
-  }
   return <Workspace key={challenge.slug} challenge={challenge} />;
 }
 
 type Tab = 'simulation' | 'explanation';
 
+const LEAVE_MESSAGE = 'Leave this practice? Nothing is saved yet, so your design and explanation will be lost.';
+
 function Workspace({ challenge }: { challenge: Challenge }) {
+  // The attempt lives here and stays mounted on narrow screens: only the view below changes.
   const history = useGraphHistory(emptyGraph());
   const [explanation, setExplanation] = useState('');
   const [tab, setTab] = useState<Tab>('simulation');
   const [problemCollapsed, setProblemCollapsed] = useState(false);
   const { elapsedSeconds } = useActiveTimer();
   const { result, stale, run } = useSimulation(history.graph, challenge);
-  useUnsavedWarning(history.graph.nodes.length > 0 || explanation.length > 0);
+  const hasWork = history.graph.nodes.length > 0 || explanation.length > 0;
+  useUnsavedWarning(hasWork);
+  const narrow = useWindowWidth() < MIN_CANVAS_WIDTH;
+  // In-app navigation never fires beforeunload, so leaving through a link asks here.
+  const confirmLeave = (e: React.MouseEvent) => {
+    if (hasWork && !window.confirm(LEAVE_MESSAGE)) e.preventDefault();
+  };
+
+  if (narrow) {
+    return (
+      <main className={styles.smallScreen}>
+        <h1>{challenge.title}</h1>
+        <p>The canvas needs a screen at least 1024px wide.</p>
+        <p className={styles.muted}>Your work is kept while this tab stays open; widen the window to continue.</p>
+      </main>
+    );
+  }
 
   const freshResult = result?.status === 'ok' && !stale ? result : null;
   const labelOf = (id: string) => {
@@ -68,7 +77,9 @@ function Workspace({ challenge }: { challenge: Challenge }) {
   return (
     <div className={styles.workspace}>
       <header className={styles.topbar}>
-        <Link to={`/system-design/${challenge.slug}`}>← {challenge.title}</Link>
+        <Link to={`/system-design/${challenge.slug}`} onClick={confirmLeave}>
+          ← {challenge.title}
+        </Link>
         <span className={styles.localMode}>
           Local practice mode: nothing is saved yet. Closing this tab loses your work.
         </span>

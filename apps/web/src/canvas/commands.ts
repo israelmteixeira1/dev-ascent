@@ -17,7 +17,9 @@ export type NodePatch = Partial<Pick<GraphNode, 'label' | 'position' | 'size'>> 
   props?: Partial<GraphNode['props']>;
 };
 
+/** Past the schema limit the graph stays as it is; the canvas tells the user why. */
 export function addNode(graph: ArchitectureGraph, kind: NodeKind, position: XY, id: string): ArchitectureGraph {
+  if (graph.nodes.length >= GRAPH_LIMITS.maxNodes) return graph;
   const node: GraphNode = {
     id,
     kind,
@@ -82,7 +84,7 @@ export function connectNodes(
   targetId: string,
   id: string,
 ): ArchitectureGraph {
-  if (!canConnect(graph, sourceId, targetId).ok) return graph;
+  if (graph.edges.length >= GRAPH_LIMITS.maxEdges || !canConnect(graph, sourceId, targetId).ok) return graph;
   const kindOf = (nodeId: string) => graph.nodes.find((n) => n.id === nodeId)!.kind;
   const edge: GraphEdge = {
     id,
