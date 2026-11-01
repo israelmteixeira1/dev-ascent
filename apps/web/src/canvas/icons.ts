@@ -1,0 +1,42 @@
+import {
+  BookText,
+  Box,
+  Cog,
+  Database,
+  DatabaseZap,
+  Globe,
+  HardDrive,
+  Inbox,
+  KeyRound,
+  Monitor,
+  Plug,
+  Router,
+  Server,
+  Split,
+  SquareDashed,
+  StickyNote,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
+import type { NodeKind } from '@devascent/domain';
+
+// Generic icons only: no cloud vendor logos.
+export const NODE_ICONS: Record<NodeKind, LucideIcon> = {
+  client: Monitor,
+  cdn: Globe,
+  load_balancer: Split,
+  api_gateway: Router,
+  service: Server,
+  worker: Cog,
+  sql_database: Database,
+  nosql_database: DatabaseZap,
+  cache: Zap,
+  queue: Inbox,
+  object_storage: HardDrive,
+  external: Plug,
+  ledger: BookText,
+  token_vault: KeyRound,
+  generic: Box,
+  note: StickyNote,
+  zone: SquareDashed,
+};
