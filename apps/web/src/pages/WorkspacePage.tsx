@@ -1,46 +1,117 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Play } from 'lucide-react';
 import { emptyGraph, NODE_TYPES, type Challenge } from '@devascent/domain';
 import { Canvas } from '../canvas/Canvas';
 import { useGraphHistory } from '../canvas/history';
 import { getChallenge } from '../content/challenges';
+import { ExplanationPanel } from '../workspace/ExplanationPanel';
+import { ProblemPanel } from '../workspace/ProblemPanel';
 import { SimulationPanel } from '../workspace/SimulationPanel';
+import { Timer } from '../workspace/Timer';
+import { useActiveTimer } from '../workspace/useActiveTimer';
 import { useSimulation } from '../workspace/useSimulation';
+import { useUnsavedWarning } from '../workspace/useUnsavedWarning';
 import { NotFoundPage } from './NotFoundPage';
 import styles from '../workspace/workspace.module.css';
+
+const MIN_CANVAS_WIDTH = 1024;
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return width;
+}
 
 export function WorkspacePage() {
   const { slug = '' } = useParams();
   const challenge = getChallenge(slug);
+  const width = useWindowWidth();
   if (!challenge) return <NotFoundPage title="Challenge not found" />;
+  if (width < MIN_CANVAS_WIDTH) {
+    return (
+      <main className={styles.smallScreen}>
+        <h1>{challenge.title}</h1>
+        <p>The canvas needs a screen at least 1024px wide.</p>
+        <Link to={`/system-design/${challenge.slug}`}>Back to the problem</Link>
+      </main>
+    );
+  }
   return <Workspace key={challenge.slug} challenge={challenge} />;
 }
 
+type Tab = 'simulation' | 'explanation';
+
 function Workspace({ challenge }: { challenge: Challenge }) {
   const history = useGraphHistory(emptyGraph());
+  const [explanation, setExplanation] = useState('');
+  const [tab, setTab] = useState<Tab>('simulation');
+  const [problemCollapsed, setProblemCollapsed] = useState(false);
+  const { elapsedSeconds } = useActiveTimer();
   const { result, stale, run } = useSimulation(history.graph, challenge);
+  useUnsavedWarning(history.graph.nodes.length > 0 || explanation.length > 0);
+
   const freshResult = result?.status === 'ok' && !stale ? result : null;
   const labelOf = (id: string) => {
     const node = history.graph.nodes.find((n) => n.id === id);
     return node ? node.label || NODE_TYPES[node.kind].label : id;
+  };
+  const runAndShow = () => {
+    run();
+    setTab('simulation');
   };
 
   return (
     <div className={styles.workspace}>
       <header className={styles.topbar}>
         <Link to={`/system-design/${challenge.slug}`}>← {challenge.title}</Link>
+        <span className={styles.localMode}>
+          Local practice mode: nothing is saved yet. Closing this tab loses your work.
+        </span>
         <span className={styles.spacer} />
-        <button type="button" className={styles.primaryButton} onClick={run}>
+        <Timer elapsedSeconds={elapsedSeconds} suggestedMinutes={challenge.suggestedMinutes} />
+        <button type="button" className={styles.primaryButton} onClick={runAndShow}>
           <Play size={14} aria-hidden /> Run simulation
         </button>
       </header>
-      <div className={styles.body}>
+
+      <div className={`${styles.body} ${problemCollapsed ? styles.bodyProblemCollapsed : ''}`}>
+        <ProblemPanel
+          challenge={challenge}
+          collapsed={problemCollapsed}
+          onToggle={() => setProblemCollapsed((c) => !c)}
+        />
         <main className={styles.canvasArea}>
           <Canvas history={history} simulation={freshResult} />
         </main>
-        <aside className={styles.sidePanel} aria-label="Simulation">
-          <h2 className={styles.panelTitle}>Simulation</h2>
-          <SimulationPanel result={result} stale={stale} labelOf={labelOf} />
+        <aside className={styles.sidePanel}>
+          <div className={styles.tabs} role="tablist" aria-label="Workspace panels">
+            {(['simulation', 'explanation'] as const).map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls={`panel-${id}`}
+                className={`${styles.tab} ${tab === id ? styles.tabActive : ''}`}
+                onClick={() => setTab(id)}
+              >
+                {id === 'simulation' ? 'Simulation' : 'Explanation'}
+              </button>
+            ))}
+          </div>
+          <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+            {tab === 'simulation' ? (
+              <SimulationPanel result={result} stale={stale} labelOf={labelOf} />
+            ) : (
+              <ExplanationPanel value={explanation} onChange={setExplanation} />
+            )}
+          </div>
         </aside>
       </div>
     </div>
