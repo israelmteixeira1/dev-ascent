@@ -1,0 +1,29 @@
+{
+  "slug": "url-shortener",
+  "title": "URL shortener",
+  "difficulty": "easy",
+  "summary": "Turn long links into short ones and redirect a flood of clicks quickly.",
+  "context": "A marketing platform wants its own link shortener. Each customer creates a handful of campaign links per day, but once a campaign goes live its short links are clicked far more often than they are created. A slow or failed redirect is a lost visit, so the read path is what matters most.",
+  "functionalRequirements": [
+    "Create a short link for a long URL, optionally with a custom alias.",
+    "Redirect a short link to its long URL.",
+    "A link never changes after it is created, and it can expire."
+  ],
+  "workload": { "peakRps": 10000, "readRatio": 0.95 },
+  "goals": [
+    { "metric": "served_rps", "target": 10000 },
+    { "metric": "p99_read_ms", "target": 200 },
+    { "metric": "availability", "target": 0.999 }
+  ],
+  "requiredDependencies": [
+    { "kinds": ["sql_database", "nosql_database"], "trafficClass": "read", "name": "a database for the URL mappings" }
+  ],
+  "assumptions": [
+    "Peak traffic is 10,000 requests per second, 95% of them redirects.",
+    "Short codes are generated without coordination between instances, for example from pre-allocated ranges.",
+    "A redirect may serve a mapping that is a few seconds stale.",
+    "Expired links are cleaned up by a background job that is out of scope."
+  ],
+  "competencies": ["caching", "load-balancing", "replication"],
+  "suggestedMinutes": 30
+}
