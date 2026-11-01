@@ -3,7 +3,7 @@ import type { SimulationInput } from '../content/schema';
 import { NODE_TYPES } from '../catalog/node-types';
 import { evaluateGoals, missingDependencies, type GoalOutcome } from './goals';
 import { findBottleneck, pickHint, type Bottleneck } from './hints';
-import { computeLoads } from './loads';
+import { propagate } from './loads';
 import {
   computeClassMetrics,
   computeNodeMetrics,
@@ -82,16 +82,26 @@ export function simulate(graph: ArchitectureGraph, input: SimulationInput): Simu
     };
   }
 
-  const loads = computeLoads(graph, input.workload, topology);
-  const nodes = computeNodeMetrics(graph, loads, input.scenario);
+  const flows = propagate(input.workload, topology);
+  const nodes = computeNodeMetrics(graph, flows.nodes, input.scenario);
   const read = computeClassMetrics(topology, nodes, 'read');
   const write = computeClassMetrics(topology, nodes, 'write');
-  const totals = computeTotals(graph, input.workload, nodes, read, write);
+  const totals = computeTotals(topology, input.workload, nodes, read, write, flows.edges);
   const missing = missingDependencies(input.requiredDependencies, topology, read, write);
   const goals = evaluateGoals(input.goals, totals, missing);
   const userFacing = new Set([...read.userFacing, ...write.userFacing]);
   const bottleneck = findBottleneck(topology, nodes, goals, userFacing);
 
+  // Only classes that actually carry traffic in this challenge can be left without a path.
+  const unrouted = [
+    ...(input.workload.readRatio > 0 ? read.pathless.map((id) => ({ id, kind: 'Reads' })) : []),
+    ...(input.workload.readRatio < 1 ? write.pathless.map((id) => ({ id, kind: 'Writes' })) : []),
+  ];
+  const noPathWarnings: SimulationWarning[] = unrouted.map(({ id, kind }) => ({
+    code: 'no_path',
+    nodeId: id,
+    message: `${kind} from "${displayName(topology.nodesById.get(id)!)}" have no connection to take, so they fail.`,
+  }));
   const backlogWarnings: SimulationWarning[] = totals.backlogs.map((b) => ({
     code: 'backlog',
     nodeId: b.queueId,
@@ -106,8 +116,21 @@ export function simulate(graph: ArchitectureGraph, input: SimulationInput): Simu
     goals,
     missingDependencies: missing,
     bottleneck,
-    hint: pickHint({ topology, metrics: nodes, totals, goals, missing, bottleneck }),
+    hint: pickHint({
+      topology,
+      metrics: nodes,
+      totals,
+      goals,
+      missing,
+      bottleneck,
+      unroutedTraffic: unrouted.length > 0,
+    }),
     assumptions: assumptionsFor(topology, input),
-    warnings: [...validation.warnings, ...genericInPathWarnings(graph, read, write), ...backlogWarnings],
+    warnings: [
+      ...validation.warnings,
+      ...noPathWarnings,
+      ...genericInPathWarnings(graph, read, write),
+      ...backlogWarnings,
+    ],
   };
 }

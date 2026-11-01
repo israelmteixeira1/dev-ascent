@@ -58,6 +58,43 @@ describe('simulate', () => {
     expect(r.missingDependencies).toEqual(['acquirer']);
   });
 
+  it('an asynchronous dependency does not satisfy a synchronous requirement (review finding 7)', () => {
+    const g = buildGraph(
+      [
+        ['c', 'client'],
+        ['s', 'service', { replicas: 2 }],
+        ['x', 'external'],
+      ],
+      [
+        ['c', 's'],
+        ['s', 'x', 'write', 'async'],
+      ],
+    );
+    const r = ok(
+      simulate(g, input({ requiredDependencies: [{ kinds: ['external'], trafficClass: 'write', name: 'acquirer' }] })),
+    );
+    expect(r.missingDependencies).toEqual(['acquirer']);
+  });
+
+  it('isolated clients never make a design look better (review finding 4)', () => {
+    const connected = buildGraph(
+      [
+        ['c', 'client'],
+        ['s', 'service'],
+      ],
+      [['c', 's']],
+    );
+    const withIsolated = buildGraph(
+      [['c', 'client'], ['s', 'service'], ...Array.from({ length: 19 }, (_, i) => [`x${i}`, 'client'] as const)],
+      [['c', 's']],
+    );
+    const base = ok(simulate(connected, input({ workload: { peakRps: 10000, readRatio: 0.95 } })));
+    const r = ok(simulate(withIsolated, input({ workload: { peakRps: 10000, readRatio: 0.95 } })));
+    expect(r.totals.servedRps).toBeLessThanOrEqual(base.totals.servedRps);
+    expect(r.warnings.map((w) => w.code)).toContain('no_path');
+    expect(r.hint).toMatch(/nowhere to go/);
+  });
+
   it('database saturated by writes', () => {
     const r = ok(
       simulate(
@@ -143,7 +180,9 @@ describe('simulate', () => {
         input({ workload: { peakRps: 1500, readRatio: 0.8 }, goals: [{ metric: 'served_rps', target: 1500 }] }),
       ),
     );
-    expect(r.totals.backlogs).toEqual([{ queueId: 'q', rps: 500 }]);
+    expect(r.totals.backlogs).toHaveLength(1);
+    expect(r.totals.backlogs[0]).toMatchObject({ queueId: 'q' });
+    expect(r.totals.backlogs[0]!.rps).toBeCloseTo(500);
     expect(r.warnings.map((w) => w.code)).toContain('backlog');
     expect(r.hint).toMatch(/Workers consuming from/);
   });

@@ -25,12 +25,17 @@ export type NodeMetrics = {
 };
 
 export type ClassMetrics = {
-  /** Latency summed along the slowest synchronous path. */
-  latencyMs: number;
+  /** Latency summed along the slowest synchronous path; null when no client has a path for this class. */
+  latencyMs: number | null;
   availability: number;
   /** Fraction of requests that are served; saturated components turn the excess into errors. */
   success: number;
+  /** Everything a request touches, including the queue it publishes to. */
   userFacing: ReadonlySet<string>;
+  /** Only what a request reaches through synchronous edges: what required dependencies are checked on. */
+  syncPath: ReadonlySet<string>;
+  /** Clients whose requests of this class have no edge to take: they fail. */
+  pathless: string[];
 };
 
 export type SimulationTotals = {
@@ -102,11 +107,13 @@ export function computeClassMetrics(
 ): ClassMetrics {
   const memo = new Map<string, { latency: number; availability: number; success: number }>();
   const userFacing = new Set<string>();
+  const syncPath = new Set<string>();
 
   const walk = (id: string): { latency: number; availability: number; success: number } => {
     const cached = memo.get(id);
     if (cached) return cached;
     userFacing.add(id);
+    syncPath.add(id);
     const node = topology.nodesById.get(id)!;
     const own = metrics[id]!;
     const role = NODE_TYPES[node.kind].role;
@@ -140,44 +147,56 @@ export function computeClassMetrics(
     return result;
   };
 
+  // A client whose requests of this class have no edge to take serves none of them: they count as
+  // failed, never as served, so a disconnected client can never make a design look better.
   const clients = topology.order.filter((id) => topology.nodesById.get(id)?.kind === 'client');
-  const results = clients.map(walk);
+  const pathless = clients.filter((id) => !(topology.outgoing.get(id) ?? []).some((e) => carries(e, trafficClass)));
+  const results = clients.map((id) => (pathless.includes(id) ? null : walk(id)));
+  const reached = results.filter((r) => r !== null);
   return {
-    latencyMs: Math.max(0, ...results.map((r) => r.latency)),
-    availability: results.length > 0 ? mean(results.map((r) => r.availability)) : 1,
-    success: results.length > 0 ? mean(results.map((r) => r.success)) : 1,
+    latencyMs: reached.length > 0 ? Math.max(...reached.map((r) => r.latency)) : null,
+    availability: results.length > 0 ? mean(results.map((r) => r?.availability ?? 0)) : 1,
+    success: results.length > 0 ? mean(results.map((r) => r?.success ?? 0)) : 1,
     userFacing,
+    syncPath,
+    pathless,
   };
 }
 
 export function computeTotals(
-  graph: ArchitectureGraph,
+  topology: Topology,
   workload: Challenge['workload'],
   metrics: Readonly<Record<string, NodeMetrics>>,
   read: ClassMetrics,
   write: ClassMetrics,
+  edgeFlows: ReadonlyMap<string, NodeLoad>,
 ): SimulationTotals {
   const r = workload.readRatio;
   const servedRps = workload.peakRps * (r * read.success + (1 - r) * write.success);
-  const nodesById = new Map(graph.nodes.map((n) => [n.id, n]));
 
+  // A queue's backlog is what it cannot hand off (no edge carries it) plus what its consumers
+  // cannot process (the fraction above their capacity), from the same flows as the load.
   const backlogs: SimulationTotals['backlogs'] = [];
-  for (const queue of graph.nodes.filter((n) => n.kind === 'queue' && metrics[n.id]).sort(byId)) {
-    const inflow = metrics[queue.id]!.readRps + metrics[queue.id]!.writeRps;
-    const capacity = graph.edges
-      .filter((e) => e.source === queue.id && e.kind === 'async' && nodesById.get(e.target)?.kind === 'worker')
-      .reduce((sum, e) => {
-        const worker = nodesById.get(e.target)!;
-        return sum + (NODE_TYPES.worker.capacityPerReplica ?? 0) * worker.props.replicas;
-      }, 0);
-    if (inflow > capacity) backlogs.push({ queueId: queue.id, rps: inflow - capacity });
+  const queues = topology.order.filter((id) => topology.nodesById.get(id)!.kind === 'queue').sort();
+  for (const queueId of queues) {
+    const inflow = metrics[queueId]!.readRps + metrics[queueId]!.writeRps;
+    let handedOff = 0;
+    let overflow = 0;
+    for (const edge of topology.outgoing.get(queueId) ?? []) {
+      const flow = edgeFlows.get(edge.id) ?? { read: 0, write: 0 };
+      const carried = flow.read + flow.write;
+      handedOff += carried;
+      overflow += carried * (1 - served(metrics[edge.target]!.utilization));
+    }
+    const backlog = inflow - handedOff + overflow;
+    if (backlog > 1e-9) backlogs.push({ queueId, rps: backlog });
   }
 
   return {
     servedRps,
     errorRate: Math.max(0, 1 - servedRps / workload.peakRps),
-    p99ReadMs: r > 0 ? P99_MULTIPLIER * read.latencyMs : null,
-    p99WriteMs: r < 1 ? P99_MULTIPLIER * write.latencyMs : null,
+    p99ReadMs: r > 0 && read.latencyMs !== null ? P99_MULTIPLIER * read.latencyMs : null,
+    p99WriteMs: r < 1 && write.latencyMs !== null ? P99_MULTIPLIER * write.latencyMs : null,
     availability: r * read.availability + (1 - r) * write.availability,
     backlogs,
   };

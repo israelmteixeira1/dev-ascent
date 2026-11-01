@@ -15,7 +15,7 @@ export type Topology = {
 };
 
 export type SimulationWarning = {
-  code: 'disconnected' | 'generic_in_path' | 'sync_cycle' | 'backlog';
+  code: 'disconnected' | 'generic_in_path' | 'sync_cycle' | 'backlog' | 'no_path';
   nodeId?: string;
   edgeId?: string;
   message: string;

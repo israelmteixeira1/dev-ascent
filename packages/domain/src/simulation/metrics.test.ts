@@ -3,16 +3,17 @@ import type { ArchitectureGraph } from '../graph/schema';
 import type { Challenge } from '../content/schema';
 import { buildGraph } from '../../test/build-graph';
 import { analyzeTopology } from './topology';
-import { computeLoads } from './loads';
+import { propagate } from './loads';
 import { computeClassMetrics, computeNodeMetrics, computeTotals, genericInPathWarnings } from './metrics';
 import { latencyMultiplier } from './model';
 
 const run = (g: ArchitectureGraph, w = { peakRps: 1000, readRatio: 0.8 }, scenario?: Challenge['scenario']) => {
   const t = analyzeTopology(g);
-  const m = computeNodeMetrics(g, computeLoads(g, w, t), scenario);
+  const flows = propagate(w, t);
+  const m = computeNodeMetrics(g, flows.nodes, scenario);
   const read = computeClassMetrics(t, m, 'read');
   const write = computeClassMetrics(t, m, 'write');
-  return { m, read, write, totals: computeTotals(g, w, m, read, write) };
+  return { m, read, write, totals: computeTotals(t, w, m, read, write, flows.edges) };
 };
 
 describe('metrics', () => {
@@ -158,6 +159,71 @@ describe('metrics', () => {
     expect(run(g).totals.backlogs).toEqual([{ queueId: 'q', rps: 200 }]);
   });
 
+  it('traffic from a client with no connection fails instead of counting as served (review finding 4)', () => {
+    const g = buildGraph(
+      [
+        ['c1', 'client'],
+        ['c2', 'client'],
+        ['s', 'service', { replicas: 2 }],
+      ],
+      [['c1', 's']],
+    );
+    const { read, totals } = run(g, { peakRps: 1000, readRatio: 1 });
+    expect(totals.servedRps).toBeCloseTo(500);
+    expect(totals.availability).toBeLessThan(0.6);
+    expect(read.pathless).toEqual(['c2']);
+  });
+
+  it('a class with no connection to take fails and has no p99 (review finding 4)', () => {
+    const g = buildGraph(
+      [
+        ['c', 'client'],
+        ['s', 'service', { replicas: 2 }],
+      ],
+      [['c', 's', 'read']],
+    );
+    const { write, totals } = run(g);
+    expect(totals.servedRps).toBeCloseTo(800);
+    expect(totals.p99WriteMs).toBeNull();
+    expect(write.pathless).toEqual(['c']);
+  });
+
+  it('backlog follows what each consumer actually receives (review finding 6)', () => {
+    const readOnlyConsumer = buildGraph(
+      [
+        ['c', 'client'],
+        ['s', 'service', { replicas: 2 }],
+        ['q', 'queue'],
+        ['w', 'worker', { replicas: 4 }],
+      ],
+      [
+        ['c', 's'],
+        ['s', 'q', 'write', 'async'],
+        ['q', 'w', 'read', 'async'],
+      ],
+    );
+    expect(run(readOnlyConsumer).totals.backlogs).toEqual([{ queueId: 'q', rps: 200 }]);
+
+    const unevenWorkers = buildGraph(
+      [
+        ['c', 'client'],
+        ['s', 'service', { replicas: 3 }],
+        ['q', 'queue'],
+        ['w1', 'worker'],
+        ['w3', 'worker', { replicas: 3 }],
+      ],
+      [
+        ['c', 's'],
+        ['s', 'q', 'all', 'async'],
+        ['q', 'w1', 'all', 'async'],
+        ['q', 'w3', 'all', 'async'],
+      ],
+    );
+    const { totals } = run(unevenWorkers, { peakRps: 2000, readRatio: 0 });
+    expect(totals.backlogs).toHaveLength(1);
+    expect(totals.backlogs[0]!.rps).toBeCloseTo(500);
+  });
+
   it('flags generic nodes on the user path', () => {
     const g = buildGraph(
       [
@@ -189,5 +255,7 @@ describe('metrics', () => {
     const { write } = run(g);
     expect(write.userFacing.has('q')).toBe(true);
     expect(write.userFacing.has('w')).toBe(false);
+    expect(write.syncPath.has('q')).toBe(false);
+    expect(write.syncPath.has('s')).toBe(true);
   });
 });

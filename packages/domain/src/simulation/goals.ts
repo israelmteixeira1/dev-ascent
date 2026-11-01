@@ -26,7 +26,7 @@ function actualOf(metric: GoalMetric, totals: SimulationTotals): number | null {
   }
 }
 
-/** Names of required dependencies absent from the user-facing path of their traffic class. */
+/** Names of required dependencies absent from the synchronous path of their traffic class (spec §7.3.7). */
 export function missingDependencies(
   dependencies: RequiredDependency[],
   topology: Topology,
@@ -35,7 +35,7 @@ export function missingDependencies(
 ): string[] {
   return dependencies
     .filter((dep) => {
-      const path = dep.trafficClass === 'read' ? read.userFacing : write.userFacing;
+      const path = dep.trafficClass === 'read' ? read.syncPath : write.syncPath;
       return ![...path].some((id) => dep.kinds.includes(topology.nodesById.get(id)!.kind));
     })
     .map((dep) => dep.name);
@@ -49,7 +49,12 @@ export function evaluateGoals(goals: Goal[], totals: SimulationTotals, missing: 
     }
     const actual = actualOf(goal.metric, totals);
     if (actual === null) {
-      return { ...goal, actual, status: 'not_evaluated', reason: 'This challenge has no traffic of that kind.' };
+      return {
+        ...goal,
+        actual,
+        status: 'not_evaluated',
+        reason: 'Not measurable: no request of this kind reaches your design.',
+      };
     }
     const lowerIsBetter = goal.metric === 'p99_read_ms' || goal.metric === 'p99_write_ms';
     const met = lowerIsBetter ? actual <= goal.target + EPSILON : actual >= goal.target - EPSILON;

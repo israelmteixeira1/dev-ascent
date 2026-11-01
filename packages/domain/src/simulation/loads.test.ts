@@ -86,6 +86,27 @@ describe('loads', () => {
     expect(l.get('db')!.write).toBe(200);
   });
 
+  it('cache-aside from a splitter still only lets misses through (review finding 8)', () => {
+    const l = loadsOf(
+      buildGraph(
+        [
+          ['c', 'client'],
+          ['gw', 'api_gateway'],
+          ['k', 'cache'],
+          ['db', 'sql_database'],
+        ],
+        [
+          ['c', 'gw'],
+          ['gw', 'k', 'cache_aside'],
+          ['gw', 'db'],
+        ],
+      ),
+    );
+    expect(l.get('k')!.read).toBe(800);
+    expect(l.get('db')!.read).toBeCloseTo(160);
+    expect(l.get('db')!.write).toBe(200);
+  });
+
   it('read-through: cache forwards misses and every write', () => {
     const l = loadsOf(
       buildGraph(

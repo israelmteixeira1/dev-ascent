@@ -43,13 +43,26 @@ type HintInput = {
   goals: GoalOutcome[];
   missing: string[];
   bottleneck: Bottleneck | null;
+  /** True when some client's requests (of a class with traffic) have no edge to take. */
+  unroutedTraffic: boolean;
 };
 
 /** One next step, in priority order. It points a direction without handing over the answer. */
-export function pickHint({ topology, metrics, totals, goals, missing, bottleneck }: HintInput): string {
+export function pickHint({
+  topology,
+  metrics,
+  totals,
+  goals,
+  missing,
+  bottleneck,
+  unroutedTraffic,
+}: HintInput): string {
   const label = (id: string) => displayName(topology.nodesById.get(id)!);
 
   if (missing.length > 0) return `Missing required dependency: ${missing[0]}. Goals can't be evaluated without it.`;
+  if (unroutedTraffic) {
+    return 'Some requests have nowhere to go: connect every client to the rest of your design, for reads and writes.';
+  }
 
   const backlog = totals.backlogs[0];
   const backlogHint = (queueId: string) =>
