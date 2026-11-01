@@ -19,8 +19,8 @@ export type FlowView = {
 
 export type HistoryMode = 'commit' | 'transient' | 'none';
 
-export function flowNodeType(_kind: NodeKind): string {
-  return 'arch';
+export function flowNodeType(kind: NodeKind): string {
+  return kind === 'note' ? 'note' : 'arch';
 }
 
 export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: FlowNode[]; edges: FlowEdge[] } {

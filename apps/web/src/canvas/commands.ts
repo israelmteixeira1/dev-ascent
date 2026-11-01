@@ -1,4 +1,5 @@
 import {
+  GRAPH_LIMITS,
   NODE_TYPES,
   allowedIntents,
   canConnect,
@@ -33,6 +34,45 @@ export function updateNode(graph: ArchitectureGraph, id: string, patch: NodePatc
     ...graph,
     nodes: graph.nodes.map((n) => (n.id === id ? { ...n, ...patch, props: { ...n.props, ...patch.props } } : n)),
   };
+}
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+export function setReplicas(graph: ArchitectureGraph, id: string, replicas: number): ArchitectureGraph {
+  const node = graph.nodes.find((n) => n.id === id);
+  if (!node || !NODE_TYPES[node.kind].replicable) return graph;
+  return updateNode(graph, id, { props: { replicas: clamp(Math.round(replicas), 1, GRAPH_LIMITS.maxReplicas) } });
+}
+
+export function renameNode(graph: ArchitectureGraph, id: string, label: string): ArchitectureGraph {
+  return updateNode(graph, id, { label: label.trim().slice(0, GRAPH_LIMITS.maxLabelLength) });
+}
+
+export type NodePropsEdit = { notes?: string; cacheHitRatio?: number; shards?: number };
+
+/** Each property only exists on the kinds it makes sense for, and always within the schema limits. */
+export function setNodeProps(graph: ArchitectureGraph, id: string, edit: NodePropsEdit): ArchitectureGraph {
+  const node = graph.nodes.find((n) => n.id === id);
+  if (!node) return graph;
+  const spec = NODE_TYPES[node.kind];
+  const props: Partial<GraphNode['props']> = {};
+  if (edit.notes !== undefined) props.notes = edit.notes.slice(0, GRAPH_LIMITS.maxNotesLength);
+  if (edit.cacheHitRatio !== undefined && spec.role === 'cache')
+    props.cacheHitRatio = clamp(edit.cacheHitRatio, 0, 0.99);
+  if (edit.shards !== undefined && spec.usesShards)
+    props.shards = clamp(Math.round(edit.shards), 1, GRAPH_LIMITS.maxShards);
+  return Object.keys(props).length > 0 ? updateNode(graph, id, { props }) : graph;
+}
+
+/** What node components and popovers send: each field goes through its own rule. */
+export type NodeEdit = { label?: string; props?: NodePropsEdit & { replicas?: number } };
+
+export function applyNodeEdit(graph: ArchitectureGraph, id: string, edit: NodeEdit): ArchitectureGraph {
+  let next = graph;
+  if (edit.label !== undefined) next = renameNode(next, id, edit.label);
+  if (edit.props?.replicas !== undefined) next = setReplicas(next, id, edit.props.replicas);
+  if (edit.props) next = setNodeProps(next, id, edit.props);
+  return next;
 }
 
 /** Creates an edge with the default type and intent for the pair; absurd connections leave the graph unchanged. */

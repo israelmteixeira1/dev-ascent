@@ -17,17 +17,20 @@ import {
 import '@xyflow/react/dist/style.css';
 import { canConnect, type NodeKind } from '@devascent/domain';
 import { graphToFlow, nodeChangesToGraph, type FlowEdge, type FlowNode } from './adapter';
-import { addNode, connectNodes, removeElements, updateEdge } from './commands';
+import { addNode, applyNodeEdit, connectNodes, removeElements, updateEdge, type NodeEdit } from './commands';
 import { EdgePopover } from './EdgePopover';
 import { EdgeEditorContext, IntentEdge } from './edges/IntentEdge';
 import type { GraphHistory } from './history';
+import { NodeActionsContext, type NodeActions } from './node-actions';
+import { NodePopover } from './NodePopover';
 import { ArchitectureNode } from './nodes/ArchitectureNode';
+import { NoteNode } from './nodes/NoteNode';
 import { Palette } from './Palette';
 import { findFreePosition, nodeRects, sizeOf, type Size } from './placement';
 import { isTypingTarget, shortcutToKind } from './shortcuts';
 import styles from './canvas.module.css';
 
-const nodeTypes = { arch: ArchitectureNode };
+const nodeTypes = { arch: ArchitectureNode, note: NoteNode };
 const edgeTypes = { intent: IntentEdge };
 
 type Props = { history: GraphHistory };
@@ -79,6 +82,15 @@ function CanvasInner({ history }: Props) {
     (event, edge) => openEdgeEditor(edge.id, new DOMRect(event.clientX, event.clientY, 0, 0)),
     [openEdgeEditor],
   );
+
+  const [nodeEditor, setNodeEditor] = useState<{ nodeId: string; anchor: DOMRect } | null>(null);
+  const closeNodeEditor = useCallback(() => setNodeEditor(null), []);
+  const onNodeChange = useCallback((id: string, edit: NodeEdit) => commit((g) => applyNodeEdit(g, id, edit)), [commit]);
+  const nodeActions: NodeActions = useMemo(
+    () => ({ onNodeChange, openNodeEditor: (nodeId, anchor) => setNodeEditor({ nodeId, anchor }) }),
+    [onNodeChange],
+  );
+  const editedNode = nodeEditor ? graph.nodes.find((n) => n.id === nodeEditor.nodeId) : undefined;
 
   const editedEdge = edgeEditor ? graph.edges.find((e) => e.id === edgeEditor.edgeId) : undefined;
   const kindOf = (id: string) => graph.nodes.find((n) => n.id === id)?.kind ?? 'generic';
@@ -166,27 +178,39 @@ function CanvasInner({ history }: Props) {
 
   return (
     <div ref={wrapper} className={styles.canvas}>
-      <EdgeEditorContext value={openEdgeEditor}>
-        <ReactFlow<FlowNode, FlowEdge>
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onDelete={onDelete}
-          onConnect={onConnect}
-          isValidConnection={isValidConnection}
-          onEdgeDoubleClick={onEdgeDoubleClick}
-          connectionMode={ConnectionMode.Loose}
-          deleteKeyCode={['Delete', 'Backspace']}
-          minZoom={0.2}
-        >
-          <Background />
-          <Controls />
-          <MiniMap pannable zoomable />
-        </ReactFlow>
-      </EdgeEditorContext>
+      <NodeActionsContext value={nodeActions}>
+        <EdgeEditorContext value={openEdgeEditor}>
+          <ReactFlow<FlowNode, FlowEdge>
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onDelete={onDelete}
+            onConnect={onConnect}
+            isValidConnection={isValidConnection}
+            onEdgeDoubleClick={onEdgeDoubleClick}
+            connectionMode={ConnectionMode.Loose}
+            deleteKeyCode={['Delete', 'Backspace']}
+            minZoom={0.2}
+          >
+            <Background />
+            <Controls />
+            <MiniMap pannable zoomable />
+          </ReactFlow>
+        </EdgeEditorContext>
+      </NodeActionsContext>
+
+      {nodeEditor && editedNode && (
+        <NodePopover
+          key={editedNode.id}
+          node={editedNode}
+          anchor={nodeEditor.anchor}
+          onChange={(edit) => onNodeChange(editedNode.id, edit)}
+          onClose={closeNodeEditor}
+        />
+      )}
 
       {edgeEditor && editedEdge && (
         <EdgePopover
