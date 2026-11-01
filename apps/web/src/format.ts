@@ -11,6 +11,14 @@ export function formatPercent(ratio: number, digits = 2): string {
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: digits }).format(ratio * 100)}%`;
 }
 
+export function formatMs(ms: number): string {
+  return `${formatInt(ms)} ms`;
+}
+
+export function formatRps(rps: number): string {
+  return `${formatInt(rps)} RPS`;
+}
+
 export const GOAL_LABELS: Record<GoalMetric, string> = {
   served_rps: 'Peak throughput',
   p99_read_ms: 'p99 latency (reads)',

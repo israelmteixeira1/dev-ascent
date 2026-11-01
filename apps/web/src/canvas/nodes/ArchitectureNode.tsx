@@ -2,6 +2,7 @@ import { memo, useContext, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Minus, NotebookPen, Plus } from 'lucide-react';
 import { GRAPH_LIMITS, NODE_TYPES } from '@devascent/domain';
+import { formatMs } from '../../format';
 import type { FlowNode } from '../adapter';
 import { NODE_ICONS } from '../icons';
 import { NodeActionsContext } from '../node-actions';
@@ -12,19 +13,36 @@ const SIDES = [Position.Top, Position.Right, Position.Bottom, Position.Left];
 function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
   const { onNodeChange, openNodeEditor } = useContext(NodeActionsContext);
   const [editing, setEditing] = useState(false);
-  const { node, readOnly } = data;
+  const { node, readOnly, metrics, isBottleneck } = data;
   const spec = NODE_TYPES[node.kind];
   const Icon = NODE_ICONS[node.kind];
   const replicas = node.props.replicas;
   const tooltip = `${spec.description.what}\n\nWhen: ${spec.description.when}\nWatch out: ${spec.description.not}`;
+  const showMetrics = metrics && node.kind !== 'client' && metrics.readRps + metrics.writeRps > 0;
 
   const finishRename = (value: string) => {
     setEditing(false);
     if (value.trim() !== node.label) onNodeChange(id, { label: value });
   };
 
+  const classes = [
+    styles.node,
+    selected ? styles.selected : '',
+    metrics?.saturated ? styles.saturated : '',
+    isBottleneck ? styles.bottleneck : '',
+  ];
+
   return (
-    <div className={`${styles.node} ${selected ? styles.selected : ''}`} title={editing ? undefined : tooltip}>
+    <div className={classes.join(' ')} title={editing ? undefined : tooltip}>
+      {showMetrics && (
+        <div className={styles.nodeMetrics}>
+          <span>
+            {Math.round(metrics.utilization * 100)}% busy · {formatMs(metrics.latencyMs)}
+          </span>
+          {metrics.saturated && <span className={styles.badgeDanger}>Saturated</span>}
+          {isBottleneck && !metrics.saturated && <span className={styles.badgeAccent}>Bottleneck</span>}
+        </div>
+      )}
       {SIDES.map((side) => (
         <Handle key={side} id={side} type="source" position={side} className={styles.handle} />
       ))}

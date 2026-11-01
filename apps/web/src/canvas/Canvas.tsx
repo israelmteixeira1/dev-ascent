@@ -15,7 +15,7 @@ import {
   type OnDelete,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { canConnect, type NodeKind } from '@devascent/domain';
+import { canConnect, type NodeKind, type SimulationOk } from '@devascent/domain';
 import { graphToFlow, nodeChangesToGraph, type FlowEdge, type FlowNode } from './adapter';
 import { addNode, applyNodeEdit, connectNodes, removeElements, updateEdge, type NodeEdit } from './commands';
 import { EdgePopover } from './EdgePopover';
@@ -34,7 +34,7 @@ import styles from './canvas.module.css';
 const nodeTypes = { arch: ArchitectureNode, note: NoteNode, zone: ZoneNode };
 const edgeTypes = { intent: IntentEdge };
 
-type Props = { history: GraphHistory };
+type Props = { history: GraphHistory; simulation?: SimulationOk | null };
 
 export function Canvas(props: Props) {
   return (
@@ -55,7 +55,7 @@ function updateSelection(prev: ReadonlySet<string>, changes: Array<NodeChange | 
   return next;
 }
 
-function CanvasInner({ history }: Props) {
+function CanvasInner({ history, simulation = null }: Props) {
   const { graph, commit, transient, undo, redo } = history;
   const wrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow<FlowNode, FlowEdge>();
@@ -64,7 +64,10 @@ function CanvasInner({ history }: Props) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [edgeEditor, setEdgeEditor] = useState<{ edgeId: string; anchor: DOMRect } | null>(null);
 
-  const { nodes, edges } = useMemo(() => graphToFlow(graph, { selectedIds, measured }), [graph, selectedIds, measured]);
+  const { nodes, edges } = useMemo(
+    () => graphToFlow(graph, { selectedIds, measured, simulation }),
+    [graph, selectedIds, measured, simulation],
+  );
 
   const onConnect = useCallback(
     (connection: Connection) =>

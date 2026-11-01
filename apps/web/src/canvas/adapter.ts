@@ -1,5 +1,5 @@
 import { MarkerType, type Edge, type Node, type NodeChange } from '@xyflow/react';
-import type { ArchitectureGraph, GraphEdge, GraphNode, NodeKind } from '@devascent/domain';
+import type { ArchitectureGraph, GraphEdge, GraphNode, NodeKind, NodeMetrics, SimulationOk } from '@devascent/domain';
 import { updateNode } from './commands';
 import { reparentToZoneUnder } from './zones';
 import type { Size } from './placement';
@@ -7,7 +7,7 @@ import type { Size } from './placement';
 // The only module that translates between the canonical graph and React Flow.
 // Everything else in the app works with ArchitectureGraph.
 
-export type ArchNodeData = { node: GraphNode; readOnly: boolean };
+export type ArchNodeData = { node: GraphNode; readOnly: boolean; metrics?: NodeMetrics; isBottleneck: boolean };
 export type ArchEdgeData = { edge: GraphEdge };
 export type FlowNode = Node<ArchNodeData>;
 export type FlowEdge = Edge<ArchEdgeData>;
@@ -16,6 +16,8 @@ export type FlowView = {
   selectedIds: ReadonlySet<string>;
   measured?: ReadonlyMap<string, Size>;
   readOnly?: boolean;
+  /** Only a fresh result: stale numbers on a changed design would mislead. */
+  simulation?: SimulationOk | null;
 };
 
 export type HistoryMode = 'commit' | 'transient' | 'none';
@@ -32,11 +34,17 @@ export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: 
 
   const nodes = ordered.map((n): FlowNode => {
     const measured = view.measured?.get(n.id);
+    const metrics = view.simulation?.nodes[n.id];
     return {
       id: n.id,
       type: flowNodeType(n.kind),
       position: n.position,
-      data: { node: n, readOnly },
+      data: {
+        node: n,
+        readOnly,
+        isBottleneck: view.simulation?.bottleneck?.nodeId === n.id,
+        ...(metrics ? { metrics } : {}),
+      },
       selected: view.selectedIds.has(n.id),
       ...(n.parentId ? { parentId: n.parentId } : {}),
       ...(measured ? { measured } : {}),

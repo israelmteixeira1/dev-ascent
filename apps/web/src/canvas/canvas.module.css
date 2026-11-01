@@ -7,6 +7,7 @@
 /* Nodes */
 
 .node {
+  position: relative;
   display: grid;
   gap: 6px;
   width: 160px;
@@ -21,6 +22,45 @@
 .selected {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.saturated {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 2px var(--color-danger-soft);
+}
+
+.bottleneck:not(.saturated) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.nodeMetrics {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.badgeDanger,
+.badgeAccent {
+  padding: 0 4px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.badgeDanger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.badgeAccent {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .nodeHeader {
