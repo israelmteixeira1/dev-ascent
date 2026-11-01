@@ -25,12 +25,13 @@ import { NodeActionsContext, type NodeActions } from './node-actions';
 import { NodePopover } from './NodePopover';
 import { ArchitectureNode } from './nodes/ArchitectureNode';
 import { NoteNode } from './nodes/NoteNode';
+import { ZoneNode } from './nodes/ZoneNode';
 import { Palette } from './Palette';
 import { findFreePosition, nodeRects, sizeOf, type Size } from './placement';
 import { isTypingTarget, shortcutToKind } from './shortcuts';
 import styles from './canvas.module.css';
 
-const nodeTypes = { arch: ArchitectureNode, note: NoteNode };
+const nodeTypes = { arch: ArchitectureNode, note: NoteNode, zone: ZoneNode };
 const edgeTypes = { intent: IntentEdge };
 
 type Props = { history: GraphHistory };

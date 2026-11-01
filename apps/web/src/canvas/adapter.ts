@@ -1,6 +1,7 @@
 import { MarkerType, type Edge, type Node, type NodeChange } from '@xyflow/react';
 import type { ArchitectureGraph, GraphEdge, GraphNode, NodeKind } from '@devascent/domain';
 import { updateNode } from './commands';
+import { reparentToZoneUnder } from './zones';
 import type { Size } from './placement';
 
 // The only module that translates between the canonical graph and React Flow.
@@ -20,7 +21,8 @@ export type FlowView = {
 export type HistoryMode = 'commit' | 'transient' | 'none';
 
 export function flowNodeType(kind: NodeKind): string {
-  return kind === 'note' ? 'note' : 'arch';
+  if (kind === 'note' || kind === 'zone') return kind;
+  return 'arch';
 }
 
 export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: FlowNode[]; edges: FlowEdge[] } {
@@ -58,20 +60,36 @@ export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: 
 const STRENGTH: Record<HistoryMode, number> = { none: 0, transient: 1, commit: 2 };
 
 /**
- * Applies the changes that belong in the graph: positions. A drag is transient until it stops.
+ * Applies the changes that belong in the graph: positions and zone sizes. A drag or a resize is
+ * transient until it ends; when a drag ends, the node joins the zone under it in the same commit.
  * Selection and measurements are view state; deletions go through onDelete as one history step.
  */
 export function nodeChangesToGraph(
   graph: ArchitectureGraph,
   changes: NodeChange[],
 ): { graph: ArchitectureGraph; mode: HistoryMode } {
+  const resizing = changes.some((c) => c.type === 'dimensions' && c.resizing === true);
   let next = graph;
   let mode: HistoryMode = 'none';
+  const raise = (m: HistoryMode) => {
+    if (STRENGTH[m] > STRENGTH[mode]) mode = m;
+  };
+  const dropped: string[] = [];
+
   for (const change of changes) {
-    if (change.type !== 'position') continue;
-    if (change.position) next = updateNode(next, change.id, { position: change.position });
-    const changeMode: HistoryMode = change.dragging ? 'transient' : 'commit';
-    if (STRENGTH[changeMode] > STRENGTH[mode]) mode = changeMode;
+    if (change.type === 'position') {
+      if (change.position) next = updateNode(next, change.id, { position: change.position });
+      const ongoing = change.dragging === true || resizing;
+      raise(ongoing ? 'transient' : 'commit');
+      if (!ongoing) dropped.push(change.id);
+    } else if (change.type === 'dimensions' && change.resizing !== undefined && change.dimensions) {
+      const node = next.nodes.find((n) => n.id === change.id);
+      if (node?.kind !== 'zone') continue;
+      next = updateNode(next, change.id, { size: change.dimensions });
+      raise(change.resizing ? 'transient' : 'commit');
+    }
   }
+
+  for (const id of dropped) next = reparentToZoneUnder(next, id);
   return { graph: next, mode };
 }

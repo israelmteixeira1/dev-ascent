@@ -84,6 +84,34 @@
   color: var(--color-accent);
 }
 
+/* Zones */
+
+.zone {
+  width: 100%;
+  height: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: rgb(67 56 202 / 0.04);
+  border: 1.5px dashed var(--color-text-muted);
+  border-radius: var(--radius-md);
+}
+
+.zoneSelected {
+  border-color: var(--color-accent);
+}
+
+.zoneLabel {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.zoneLabelInput {
+  width: auto;
+  min-width: 160px;
+}
+
 /* Notes */
 
 .note {
