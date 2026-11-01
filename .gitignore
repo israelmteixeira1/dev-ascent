@@ -1,0 +1,13 @@
+# Notas de discovery com detalhes técnicos de terceiros (não publicar)
+docs/discovery/_privado/
+
+# Dependências e artefatos de build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Segredos locais (só o .env.example, com placeholders, entra no repositório)
+.env
+.env.*
+!.env.example
