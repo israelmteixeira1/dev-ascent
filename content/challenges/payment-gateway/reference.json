@@ -1,0 +1,130 @@
+{
+  "challengeSlug": "payment-gateway",
+  "graph": {
+    "schemaVersion": 1,
+    "nodes": [
+      {
+        "id": "ref-pg-pci",
+        "kind": "zone",
+        "label": "PCI zone",
+        "position": { "x": 640, "y": -220 },
+        "size": { "width": 260, "height": 160 },
+        "props": { "replicas": 1 }
+      },
+      {
+        "id": "ref-pg-checkout",
+        "kind": "client",
+        "label": "Merchant checkout",
+        "position": { "x": 0, "y": 120 },
+        "props": { "replicas": 1 }
+      },
+      {
+        "id": "ref-pg-gateway",
+        "kind": "api_gateway",
+        "label": "API gateway",
+        "position": { "x": 220, "y": 120 },
+        "props": { "replicas": 2, "notes": "Authenticates merchants and rate-limits per merchant." }
+      },
+      {
+        "id": "ref-pg-payments",
+        "kind": "service",
+        "label": "Payment service",
+        "position": { "x": 440, "y": 120 },
+        "props": {
+          "replicas": 4,
+          "notes": "Checks the idempotency key first, then authorises with the acquirer under a timeout and records the result in the ledger."
+        }
+      },
+      {
+        "id": "ref-pg-vault",
+        "kind": "token_vault",
+        "label": "Token vault",
+        "parentId": "ref-pg-pci",
+        "position": { "x": 50, "y": 50 },
+        "props": {
+          "replicas": 3,
+          "notes": "Swaps card numbers for tokens; nothing outside the PCI zone sees a card number."
+        }
+      },
+      {
+        "id": "ref-pg-idempotency",
+        "kind": "nosql_database",
+        "label": "Idempotency keys",
+        "position": { "x": 700, "y": 20 },
+        "props": { "replicas": 2, "notes": "Key → stored response, kept for 24 h; a retry returns the same result." }
+      },
+      {
+        "id": "ref-pg-ledger",
+        "kind": "ledger",
+        "label": "Ledger",
+        "position": { "x": 700, "y": 140 },
+        "props": { "replicas": 2, "shards": 3, "notes": "Double-entry, append-only; sharded by merchant." }
+      },
+      {
+        "id": "ref-pg-acquirers",
+        "kind": "external",
+        "label": "Payment acquirers",
+        "position": { "x": 700, "y": 260 },
+        "props": { "replicas": 2, "notes": "Primary and secondary acquirer; fail over on timeout or 5xx." }
+      },
+      {
+        "id": "ref-pg-events",
+        "kind": "queue",
+        "label": "Payment events",
+        "position": { "x": 440, "y": 380 },
+        "props": { "replicas": 1 }
+      },
+      {
+        "id": "ref-pg-webhooks",
+        "kind": "worker",
+        "label": "Webhook sender",
+        "position": { "x": 660, "y": 380 },
+        "props": { "replicas": 4, "notes": "Retries with exponential backoff until the merchant acknowledges." }
+      },
+      {
+        "id": "ref-pg-merchant-endpoints",
+        "kind": "external",
+        "label": "Merchant webhook endpoints",
+        "position": { "x": 880, "y": 380 },
+        "props": { "replicas": 1 }
+      }
+    ],
+    "edges": [
+      { "id": "ref-pg-e1", "source": "ref-pg-checkout", "target": "ref-pg-gateway", "kind": "sync", "intent": "all" },
+      {
+        "id": "ref-pg-e2",
+        "source": "ref-pg-gateway",
+        "target": "ref-pg-payments",
+        "kind": "sync",
+        "intent": "all",
+        "label": "POST /payments (Idempotency-Key)"
+      },
+      { "id": "ref-pg-e3", "source": "ref-pg-payments", "target": "ref-pg-vault", "kind": "sync", "intent": "write" },
+      {
+        "id": "ref-pg-e4",
+        "source": "ref-pg-payments",
+        "target": "ref-pg-idempotency",
+        "kind": "sync",
+        "intent": "all"
+      },
+      { "id": "ref-pg-e5", "source": "ref-pg-payments", "target": "ref-pg-ledger", "kind": "sync", "intent": "all" },
+      {
+        "id": "ref-pg-e6",
+        "source": "ref-pg-payments",
+        "target": "ref-pg-acquirers",
+        "kind": "sync",
+        "intent": "write",
+        "label": "authorise"
+      },
+      { "id": "ref-pg-e7", "source": "ref-pg-payments", "target": "ref-pg-events", "kind": "async", "intent": "write" },
+      { "id": "ref-pg-e8", "source": "ref-pg-events", "target": "ref-pg-webhooks", "kind": "async", "intent": "all" },
+      {
+        "id": "ref-pg-e9",
+        "source": "ref-pg-webhooks",
+        "target": "ref-pg-merchant-endpoints",
+        "kind": "sync",
+        "intent": "all"
+      }
+    ]
+  }
+}
