@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, renderHook, act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
@@ -43,7 +43,7 @@ describe('format', () => {
 
 describe('SimulationPanel', () => {
   it('invites to run when there is no result yet', () => {
-    renderPanel(<SimulationPanel result={null} stale={false} labelOf={(id) => id} />);
+    renderPanel(<SimulationPanel result={null} stale={false} labelOf={(id) => id} onRun={vi.fn()} />);
     expect(screen.getByText(/Run the simulation/)).toBeInTheDocument();
   });
 
@@ -53,6 +53,7 @@ describe('SimulationPanel', () => {
         result={{ status: 'blocked', modelVersion: 1, reason: 'Add a client: traffic enters…', warnings: [] }}
         stale={false}
         labelOf={(id) => id}
+        onRun={vi.fn()}
       />,
     );
     expect(screen.getByText(/Add a client/)).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe('SimulationPanel', () => {
   });
 
   it('ok result shows goals with text status, bottleneck, hint and assumptions', async () => {
-    renderPanel(<SimulationPanel result={sampleOk} stale={false} labelOf={() => 'Orders DB'} />);
+    renderPanel(<SimulationPanel result={sampleOk} stale={false} labelOf={() => 'Orders DB'} onRun={vi.fn()} />);
     expect(screen.getAllByText(/^(Met|Not met|Not evaluated)$/)).toHaveLength(sampleOk.goals.length);
     expect(screen.getByText(/^Bottleneck: Orders DB/)).toBeInTheDocument();
     expect(screen.getByText(sampleOk.hint)).toBeInTheDocument();
@@ -69,8 +70,18 @@ describe('SimulationPanel', () => {
   });
 
   it('stale result is labelled', () => {
-    renderPanel(<SimulationPanel result={sampleOk} stale labelOf={(id) => id} />);
+    renderPanel(<SimulationPanel result={sampleOk} stale labelOf={(id) => id} onRun={vi.fn()} />);
     expect(screen.getByText('Design changed: run the simulation again')).toBeInTheDocument();
+  });
+
+  it('a stale result hides the previous verdict and offers to run again (usability review)', async () => {
+    const onRun = vi.fn();
+    renderPanel(<SimulationPanel result={sampleOk} stale labelOf={(id) => id} onRun={onRun} />);
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByText(/^(Met|Not met|Not evaluated)$/)).toBeNull();
+    expect(screen.queryByText(sampleOk.hint)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Run again' }));
+    expect(onRun).toHaveBeenCalled();
   });
 });
 

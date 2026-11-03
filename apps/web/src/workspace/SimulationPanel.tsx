@@ -4,7 +4,12 @@ import type { Bottleneck, GoalOutcome, SimulationResult } from '@devascent/domai
 import { GOAL_LABELS, formatGoalTarget, formatMs, formatPercent, formatRps } from '../format';
 import styles from './workspace.module.css';
 
-type Props = { result: SimulationResult | null; stale: boolean; labelOf: (nodeId: string) => string };
+type Props = {
+  result: SimulationResult | null;
+  stale: boolean;
+  labelOf: (nodeId: string) => string;
+  onRun: () => void;
+};
 
 const STATUS_TEXT: Record<GoalOutcome['status'], string> = {
   met: 'Met',
@@ -35,8 +40,23 @@ function formatActual(goal: GoalOutcome): string {
   return formatMs(goal.actual);
 }
 
-export function SimulationPanel({ result, stale, labelOf }: Props) {
+export function SimulationPanel({ result, stale, labelOf, onRun }: Props) {
   const [showAssumptions, setShowAssumptions] = useState(false);
+
+  // The previous verdict belongs to a design that no longer exists: showing "Met" would mislead.
+  if (result && stale) {
+    return (
+      <div className={styles.panelBody}>
+        <div className={styles.stale} role="status">
+          <p className={styles.staleText}>Design changed: run the simulation again</p>
+          <button type="button" className={styles.secondaryButton} onClick={onRun}>
+            Run again
+          </button>
+        </div>
+        <HelpLink />
+      </div>
+    );
+  }
 
   if (!result) {
     return (
@@ -52,12 +72,6 @@ export function SimulationPanel({ result, stale, labelOf }: Props) {
 
   return (
     <div className={styles.panelBody}>
-      {stale && (
-        <p className={styles.stale} role="status">
-          Design changed: run the simulation again
-        </p>
-      )}
-
       {result.status === 'blocked' ? (
         <p className={styles.blocked} role="status">
           {result.reason}
@@ -78,7 +92,7 @@ export function SimulationPanel({ result, stale, labelOf }: Props) {
                 <tr key={goal.metric}>
                   <th scope="row">{GOAL_LABELS[goal.metric]}</th>
                   <td>{formatGoalTarget(goal)}</td>
-                  <td>{formatActual(goal)}</td>
+                  <td className={styles.goalResult}>{formatActual(goal)}</td>
                   <td>
                     <span className={`${styles.status} ${styles[goal.status]}`} title={goal.reason}>
                       {STATUS_TEXT[goal.status]}

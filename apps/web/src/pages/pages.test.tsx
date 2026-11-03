@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { App } from '../App';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary, RouteErrorBoundary } from '../ErrorBoundary';
 
 const renderAt = (path: string) =>
   render(
@@ -52,6 +53,26 @@ describe('pages', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText(/Something went wrong on this screen/)).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('leaving the broken screen through its link shows the next screen (usability review)', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const Boom = () => {
+      throw new Error('boom');
+    };
+    render(
+      <MemoryRouter initialEntries={['/broken']}>
+        <RouteErrorBoundary>
+          <Routes>
+            <Route path="/broken" element={<Boom />} />
+            <Route path="/system-design" element={<p>Catalog</p>} />
+          </Routes>
+        </RouteErrorBoundary>
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('link', { name: 'Back to the challenges' }));
+    expect(screen.getByText('Catalog')).toBeInTheDocument();
     vi.restoreAllMocks();
   });
 });

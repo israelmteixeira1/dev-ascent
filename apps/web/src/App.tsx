@@ -1,5 +1,5 @@
 import { Route, Routes } from 'react-router';
-import { ErrorBoundary } from './ErrorBoundary';
+import { RouteErrorBoundary } from './ErrorBoundary';
 import { CatalogPage } from './pages/CatalogPage';
 import { ChallengeIntroPage } from './pages/ChallengeIntroPage';
 import { HomePage } from './pages/HomePage';
@@ -9,7 +9,7 @@ import { WorkspacePage } from './pages/WorkspacePage';
 
 export function App() {
   return (
-    <ErrorBoundary>
+    <RouteErrorBoundary>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/system-design" element={<CatalogPage />} />
@@ -18,6 +18,6 @@ export function App() {
         <Route path="/system-design/:slug/practice" element={<WorkspacePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </ErrorBoundary>
+    </RouteErrorBoundary>
   );
 }

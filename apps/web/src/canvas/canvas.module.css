@@ -29,25 +29,27 @@
   box-shadow: 0 0 0 2px var(--color-danger-soft);
 }
 
+/* Amber, so the bottleneck never looks like the selection (accent) or a saturated node (red). */
 .bottleneck:not(.saturated) {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 2px var(--color-warning-soft);
 }
 
+/* 8px clears the top handle, which sits 4px above the border and used to cut through the text. */
 .nodeMetrics {
   position: absolute;
-  bottom: calc(100% + 4px);
+  bottom: calc(100% + 8px);
   left: 0;
   display: flex;
   gap: 4px;
   align-items: center;
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
 .badgeDanger,
-.badgeAccent {
+.badgeWarning {
   padding: 0 4px;
   font-weight: 600;
   border-radius: 4px;
@@ -58,9 +60,9 @@
   background: var(--color-danger-soft);
 }
 
-.badgeAccent {
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
+.badgeWarning {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
 }
 
 .nodeHeader {
@@ -236,6 +238,7 @@
   position: fixed;
   z-index: 200;
   display: grid;
+  overflow-y: auto;
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--color-surface);
@@ -293,6 +296,20 @@
   cursor: pointer;
 }
 
+/* Minimap: graphic contrast of at least 3:1 (WCAG 1.4.11) for the blocks and the viewport outline. */
+
+.minimap {
+  --xy-minimap-background-color: var(--color-surface);
+  --xy-minimap-node-background-color: var(--color-graphic);
+  --xy-minimap-mask-background-color: rgb(16 24 40 / 0.06);
+  --xy-minimap-mask-stroke-color: var(--color-accent);
+  --xy-minimap-mask-stroke-width: 2;
+
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
 /* Toolbar */
 
 .toolbar {
@@ -303,7 +320,7 @@
   display: grid;
   gap: var(--space-2);
   justify-items: start;
-  max-width: 420px;
+  max-width: min(420px, calc(100% - 2 * var(--space-3)));
 }
 
 .toolbarButton {

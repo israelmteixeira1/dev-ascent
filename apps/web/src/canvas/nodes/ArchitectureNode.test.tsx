@@ -62,6 +62,15 @@ describe('ArchitectureNode', () => {
     expect(screen.getByRole('button', { name: 'Remove replica' })).toBeDisabled();
   });
 
+  it('the bottom row still drags the node; only its buttons opt out (usability review)', () => {
+    renderNode('service');
+    // React Flow skips the drag when the pointer is inside a `.nodrag` element.
+    expect(screen.getByText('×1').closest('.nodrag')).toBeNull();
+    for (const name of ['Remove replica', 'Add replica', 'Notes and settings']) {
+      expect(screen.getByRole('button', { name }).closest('.nodrag')).not.toBeNull();
+    }
+  });
+
   it('clients have no replicas', () => {
     renderNode('client');
     expect(screen.queryByRole('button', { name: 'Add replica' })).toBeNull();

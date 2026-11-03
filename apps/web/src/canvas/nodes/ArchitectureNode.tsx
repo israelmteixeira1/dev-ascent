@@ -41,7 +41,7 @@ function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
             {Math.round(metrics.utilization * 100)}% busy · {formatMs(metrics.latencyMs)}
           </span>
           {metrics.saturated && <span className={styles.badgeDanger}>Saturated</span>}
-          {isBottleneck && !metrics.saturated && <span className={styles.badgeAccent}>Bottleneck</span>}
+          {isBottleneck && !metrics.saturated && <span className={styles.badgeWarning}>Bottleneck</span>}
         </div>
       )}
       {SIDES.map((side) => (
@@ -73,7 +73,8 @@ function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
       </div>
 
       {!readOnly && (
-        <div className={`${styles.nodeControls} nodrag`}>
+        // Only the buttons opt out of dragging: the rest of the row moves the node like the header does.
+        <div className={styles.nodeControls}>
           {spec.replicable ? (
             <span
               className={styles.replicas}
@@ -81,6 +82,7 @@ function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
             >
               <button
                 type="button"
+                className="nodrag"
                 aria-label="Remove replica"
                 disabled={replicas <= 1}
                 onClick={() => onNodeChange(id, { props: { replicas: replicas - 1 } })}
@@ -90,6 +92,7 @@ function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
               <span aria-label="Replicas">×{replicas}</span>
               <button
                 type="button"
+                className="nodrag"
                 aria-label="Add replica"
                 disabled={replicas >= GRAPH_LIMITS.maxReplicas}
                 onClick={() => onNodeChange(id, { props: { replicas: replicas + 1 } })}
@@ -102,7 +105,7 @@ function ArchitectureNodeView({ id, data, selected }: NodeProps<FlowNode>) {
           )}
           <button
             type="button"
-            className={`${styles.iconButton} ${node.props.notes ? styles.hasNotes : ''}`}
+            className={`${styles.iconButton} ${node.props.notes ? styles.hasNotes : ''} nodrag`}
             aria-label="Notes and settings"
             title="Notes and settings"
             onClick={(e) => openNodeEditor(id, e.currentTarget.getBoundingClientRect())}

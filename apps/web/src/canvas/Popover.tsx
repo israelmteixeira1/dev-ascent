@@ -1,11 +1,29 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './canvas.module.css';
 
 type Props = { anchor: DOMRect; label: string; onClose: () => void; children: ReactNode };
+type Viewport = { width: number; height: number };
 
 const WIDTH = 300;
+const MARGIN = 8;
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
+
+/**
+ * Below the anchor when the whole popover fits, above it otherwise, and never past the window:
+ * a popover taller than the window starts at the top and scrolls inside.
+ */
+export function placePopover(anchor: DOMRect, height: number, viewport: Viewport) {
+  const maxHeight = viewport.height - 2 * MARGIN;
+  const shown = Math.min(height, maxHeight);
+  const below = anchor.bottom + MARGIN;
+  const above = anchor.top - MARGIN - shown;
+  let top: number;
+  if (below + shown <= viewport.height - MARGIN) top = below;
+  else if (above >= MARGIN) top = above;
+  else top = Math.max(MARGIN, viewport.height - MARGIN - shown);
+  return { left: clamp(anchor.left, MARGIN, viewport.width - WIDTH - MARGIN), top, maxHeight };
+}
 
 /**
  * Rendered in a portal above every panel. Esc or a click outside closes it; the focused field is
@@ -13,6 +31,18 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
  */
 export function Popover({ anchor, label, onClose, children }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  // Measured before paint, so the popover never shows up in the wrong place first.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setHeight(el.scrollHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const close = () => {
@@ -37,8 +67,7 @@ export function Popover({ anchor, label, onClose, children }: Props) {
   }, [onClose]);
 
   const style = {
-    left: clamp(anchor.left, 8, window.innerWidth - WIDTH - 8),
-    top: clamp(anchor.bottom + 8, 8, window.innerHeight - 120),
+    ...placePopover(anchor, height, { width: window.innerWidth, height: window.innerHeight }),
     width: WIDTH,
   };
 

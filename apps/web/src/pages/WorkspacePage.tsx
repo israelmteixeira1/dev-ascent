@@ -118,7 +118,7 @@ function Workspace({ challenge }: { challenge: Challenge }) {
           </div>
           <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
             {tab === 'simulation' ? (
-              <SimulationPanel result={result} stale={stale} labelOf={labelOf} />
+              <SimulationPanel result={result} stale={stale} labelOf={labelOf} onRun={runAndShow} />
             ) : (
               <ExplanationPanel value={explanation} onChange={setExplanation} />
             )}
