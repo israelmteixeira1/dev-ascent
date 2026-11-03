@@ -60,6 +60,36 @@ describe('popover placement (usability review)', () => {
   it('a popover taller than the window starts at the top and scrolls inside', () => {
     expect(placePopover(anchorAt(600), 900, viewport)).toMatchObject({ top: 8, maxHeight: 704 });
   });
+
+  it('stays inside the window after it shrinks below the anchor (Codex review of the fix)', () => {
+    const { top } = placePopover(anchorAt(900), 300, { width: 1000, height: 500 });
+    expect(top).toBeGreaterThanOrEqual(8);
+    expect(top + 300).toBeLessThanOrEqual(500 - 8);
+  });
+});
+
+describe('Popover placement in the component (Codex review of the fix)', () => {
+  it('uses its measured height to open above an anchor near the bottom, and stops observing on close', () => {
+    const disconnect = vi.fn();
+    const original = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect = disconnect;
+    };
+    const height = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(300);
+    const anchorTop = window.innerHeight - 40;
+    const { unmount } = render(
+      <Popover anchor={new DOMRect(100, anchorTop, 0, 20)} label="Test" onClose={vi.fn()}>
+        x
+      </Popover>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Test' }).style.top).toBe(`${anchorTop - 8 - 300}px`);
+    unmount();
+    expect(disconnect).toHaveBeenCalled();
+    height.mockRestore();
+    globalThis.ResizeObserver = original;
+  });
 });
 
 describe('Popover', () => {

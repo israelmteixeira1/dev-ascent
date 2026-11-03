@@ -21,7 +21,9 @@ export function placePopover(anchor: DOMRect, height: number, viewport: Viewport
   let top: number;
   if (below + shown <= viewport.height - MARGIN) top = below;
   else if (above >= MARGIN) top = above;
-  else top = Math.max(MARGIN, viewport.height - MARGIN - shown);
+  else top = viewport.height - MARGIN - shown;
+  // The anchor is from when the popover opened: after the window shrinks it may sit below the edge.
+  top = clamp(top, MARGIN, viewport.height - MARGIN - shown);
   return { left: clamp(anchor.left, MARGIN, viewport.width - WIDTH - MARGIN), top, maxHeight };
 }
 
@@ -37,11 +39,20 @@ export function Popover({ anchor, label, onClose, children }: Props) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const measure = () => setHeight(el.scrollHeight);
+    // Full content height plus the borders, which scrollHeight leaves out.
+    const measure = () => setHeight(el.scrollHeight + el.offsetHeight - el.clientHeight);
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
+  }, []);
+
+  // Re-place on window resize: the position is computed from the window size at render time.
+  const [, setWindowSize] = useState(0);
+  useEffect(() => {
+    const onResize = () => setWindowSize((n) => n + 1);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   useEffect(() => {

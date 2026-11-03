@@ -19,9 +19,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* An outline, not the border: the border carries the diagnosis (saturated, bottleneck), so a
+   selected bottleneck shows both states at once. */
 .selected {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .saturated {

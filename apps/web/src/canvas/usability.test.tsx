@@ -38,6 +38,22 @@ describe('canvas usability (usability review, stage 1)', () => {
     expect(zone).toHaveClass('selected');
     expect(Number(zone.style.zIndex)).toBeLessThan(0);
   });
+
+  it('a selected component comes to the front of a note that overlaps it (Codex review of the fix)', () => {
+    const graph = buildGraph(
+      [
+        ['s', 'service'],
+        ['note', 'note'],
+      ],
+      [],
+    );
+    const { container } = renderCanvas(graph);
+    const service = container.querySelector<HTMLElement>('.react-flow__node[data-id="s"]')!;
+    const note = container.querySelector<HTMLElement>('.react-flow__node[data-id="note"]')!;
+    fireEvent.click(service);
+    expect(service).toHaveClass('selected');
+    expect(Number(service.style.zIndex)).toBeGreaterThan(Number(note.style.zIndex || 0));
+  });
 });
 
 describe('canvas readability (usability review, stage 3)', () => {
