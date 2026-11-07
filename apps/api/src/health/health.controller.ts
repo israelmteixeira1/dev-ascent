@@ -1,0 +1,12 @@
+import { Controller, Get } from '@nestjs/common';
+import { Public } from '../common/public.decorator';
+
+@Controller()
+export class HealthController {
+  /** Liveness: the process answers. */
+  @Public()
+  @Get('health')
+  health() {
+    return { status: 'ok' };
+  }
+}
