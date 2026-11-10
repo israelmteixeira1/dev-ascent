@@ -219,10 +219,16 @@ function CanvasInner({ history, simulation = null }: Props) {
             connectionMode={ConnectionMode.Loose}
             deleteKeyCode={['Delete', 'Backspace']}
             minZoom={0.2}
+            // Raising a selected zone would put it over the components it is meant to receive.
+            elevateNodesOnSelect={false}
+            defaultMarkerColor="var(--color-text-muted)"
           >
             <Background />
-            <Controls />
-            <MiniMap pannable zoomable />
+            {/* No interactivity lock: one click made the canvas read-only with no visible cue. */}
+            <Controls showInteractive={false} />
+            {graph.nodes.length > 0 && (
+              <MiniMap pannable zoomable className={styles.minimap} style={{ width: 160, height: 110 }} />
+            )}
           </ReactFlow>
         </EdgeEditorContext>
       </NodeActionsContext>

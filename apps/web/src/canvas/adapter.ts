@@ -27,6 +27,12 @@ export function flowNodeType(kind: NodeKind): string {
   return 'arch';
 }
 
+/**
+ * Selected components and notes come to the front. React Flow's own elevation is off because it
+ * would also raise a selected zone over the components it is meant to receive; zones stay behind.
+ */
+const SELECTED_Z = 1000;
+
 export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: FlowNode[]; edges: FlowEdge[] } {
   // React Flow requires parents before their children.
   const ordered = [...graph.nodes.filter((n) => n.kind === 'zone'), ...graph.nodes.filter((n) => n.kind !== 'zone')];
@@ -35,6 +41,7 @@ export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: 
   const nodes = ordered.map((n): FlowNode => {
     const measured = view.measured?.get(n.id);
     const metrics = view.simulation?.nodes[n.id];
+    const selected = view.selectedIds.has(n.id);
     return {
       id: n.id,
       type: flowNodeType(n.kind),
@@ -45,10 +52,11 @@ export function graphToFlow(graph: ArchitectureGraph, view: FlowView): { nodes: 
         isBottleneck: view.simulation?.bottleneck?.nodeId === n.id,
         ...(metrics ? { metrics } : {}),
       },
-      selected: view.selectedIds.has(n.id),
+      selected,
       ...(n.parentId ? { parentId: n.parentId } : {}),
       ...(measured ? { measured } : {}),
       ...(n.kind === 'zone' && n.size ? { width: n.size.width, height: n.size.height, zIndex: -1 } : {}),
+      ...(n.kind !== 'zone' && selected ? { zIndex: SELECTED_Z } : {}),
     };
   });
 

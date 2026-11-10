@@ -18,6 +18,8 @@
   --color-success-soft: #e6f4ec;
   --color-warning: #8a4b00;
   --color-warning-soft: #fdf3e4;
+  /* Non-text graphics (minimap blocks): 3.2:1 on the surface. */
+  --color-graphic: #8a909c;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -52,4 +54,5 @@
   --color-success-soft: #173326;
   --color-warning: #f5b85c;
   --color-warning-soft: #3a2c16;
+  --color-graphic: #7a8190;
 }

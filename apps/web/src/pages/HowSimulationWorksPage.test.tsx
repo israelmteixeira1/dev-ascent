@@ -12,8 +12,9 @@ const renderAt = (path: string) =>
   );
 
 describe('How the simulation works', () => {
-  it('lists every simulated component with its parameters and the model version', () => {
+  it('lists every simulated component with its parameters and the model version', async () => {
     renderAt('/system-design/how-simulation-works');
+    expect(await screen.findByText(/Model version 1/)).toBeInTheDocument();
     Object.values(NODE_TYPES)
       .filter((t) => t.role !== 'ignored')
       .forEach((t) => expect(screen.getByRole('rowheader', { name: t.label })).toBeInTheDocument());
@@ -21,9 +22,9 @@ describe('How the simulation works', () => {
     expect(screen.getByText(/not a benchmark/i)).toBeInTheDocument();
   });
 
-  it('is linked from the catalog', () => {
+  it('is linked from the catalog', async () => {
     renderAt('/system-design');
-    expect(screen.getByRole('link', { name: 'How the simulation works' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'How the simulation works' })).toHaveAttribute(
       'href',
       '/system-design/how-simulation-works',
     );

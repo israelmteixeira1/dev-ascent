@@ -2,6 +2,9 @@ export * from './graph/schema';
 export * from './catalog/node-types';
 export * from './catalog/intents';
 export * from './content/schema';
+export * from './contract/api';
+export * from './contract/attempts';
+export * from './contract/safe-next';
 export {
   SIMULATION_MODEL_VERSION,
   P99_MULTIPLIER,
