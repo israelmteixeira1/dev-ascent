@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 
-/** Seconds spent with the tab visible. It only measures; it never blocks anything. */
-export function useActiveTimer() {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+/**
+ * Seconds spent with the tab visible, starting from the time already saved with the draft.
+ * It only measures; it never blocks anything.
+ */
+export function useActiveTimer(initialSeconds = 0) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(initialSeconds);
   useEffect(() => {
     const id = setInterval(() => {
       if (document.visibilityState === 'visible') setElapsedSeconds((s) => s + 1);
