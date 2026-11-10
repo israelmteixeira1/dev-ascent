@@ -20,3 +20,6 @@ export type ApiErrorBody = { error: { code: ApiErrorCode; message: string; detai
 
 /** Every request that changes data carries this header with the value "1": a cross-site form cannot set it. */
 export const CSRF_HEADER = 'x-devascent-csrf';
+
+/** Who is signed in, as `GET /api/me` answers it. No e-mail is ever stored (spec §12). */
+export type SessionUser = { id: string; name: string };

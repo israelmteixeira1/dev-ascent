@@ -3,3 +3,4 @@ packages:
   - packages/*
 allowBuilds:
   '@swc/core': false
+  esbuild: false
