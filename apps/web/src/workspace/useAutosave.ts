@@ -7,9 +7,13 @@ export const AUTOSAVE_DELAY_MS = 2_000;
 const RETRY_FIRST_MS = 2_000;
 const RETRY_MAX_MS = 30_000;
 
-export type SaveStatus = 'saved' | 'pending' | 'saving' | 'retrying' | 'conflict' | 'signed_out';
+export type SaveStatus = 'saved' | 'pending' | 'saving' | 'retrying' | 'rejected' | 'conflict' | 'signed_out';
 
-type Phase = 'idle' | 'saving' | 'retrying' | 'conflict' | 'signed_out';
+type Phase = 'idle' | 'saving' | 'retrying' | 'rejected' | 'conflict' | 'signed_out';
+
+/** Worth retrying: the network, the server or the rate limit. Any other refusal will not change. */
+const isRetryable = (error: unknown) =>
+  !(error instanceof ApiError) || error.status === 0 || error.status === 429 || error.status >= 500;
 type Content = { graph: ArchitectureGraph; explanation: string };
 
 type Input = {
@@ -123,6 +127,11 @@ export function useAutosave(input: Input) {
               setPhase('signed_out');
               return;
             }
+            if (!isRetryable(error)) {
+              // The next change tries again; repeating this very request would only fail again.
+              setPhase('rejected');
+              return;
+            }
             setPhase('retrying');
             const delay = retryDelayRef.current;
             retryDelayRef.current = Math.min(delay * 2, RETRY_MAX_MS);
@@ -168,6 +177,8 @@ export function useAutosave(input: Input) {
       window.removeEventListener('pagehide', flush);
       window.removeEventListener('focus', onFocus);
       if (retryRef.current) clearTimeout(retryRef.current);
+      // Leaving the workspace (Back, a link) within the 2 s wait still sends the pending change.
+      flush();
     };
   }, [send]);
 
@@ -183,8 +194,11 @@ export function useAutosave(input: Input) {
     send(false);
   }, [send]);
 
-  const unsavedChanges = graph !== saved.graph || explanation !== saved.explanation;
-  const status: SaveStatus = phase === 'idle' ? (unsavedChanges ? 'pending' : 'saved') : phase;
+  const differsFromSaved = graph !== saved.graph || explanation !== saved.explanation;
+  // A save in flight may still overwrite what the screen shows (an undo back to the saved content),
+  // so the warning stays on until the request settles.
+  const unsavedChanges = differsFromSaved || phase === 'saving';
+  const status: SaveStatus = phase === 'idle' ? (differsFromSaved ? 'pending' : 'saved') : phase;
 
   return { status, conflict, keepMine, unsavedChanges };
 }

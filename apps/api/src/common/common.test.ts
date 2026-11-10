@@ -78,16 +78,16 @@ describe('API foundation', () => {
     expect(res.body).toMatchObject({ error: { code: 'rate_limited' } });
   });
 
-  it('accepts a 900 KB JSON body and rejects 2 MB with 413', async () => {
+  it('accepts a 2.5 MB JSON body and rejects 4 MB with 413', async () => {
     const ok = await http()
       .post('/api/probe')
       .set(CSRF_HEADER, '1')
-      .send({ data: 'a'.repeat(900_000) });
+      .send({ data: 'a'.repeat(2_500_000) });
     expect(ok.status).toBe(201);
     const tooLarge = await http()
       .post('/api/probe')
       .set(CSRF_HEADER, '1')
-      .send({ data: 'a'.repeat(2_000_000) });
+      .send({ data: 'a'.repeat(4_000_000) });
     expect(tooLarge.status).toBe(413);
     expect(tooLarge.body).toMatchObject({ error: { code: 'payload_too_large' } });
   });

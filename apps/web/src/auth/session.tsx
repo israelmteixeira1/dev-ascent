@@ -7,7 +7,10 @@ import styles from '../pages/pages.module.css';
 type Session = {
   status: 'loading' | 'signed-in' | 'signed-out';
   user: SessionUser | null;
-  signOut: () => Promise<void>;
+  /** True once the server ended the session; false if it could not, and the user stays signed in. */
+  signOut: () => Promise<boolean>;
+  /** A request answered 401: the session ended while the app was open. */
+  expire: () => void;
 };
 
 const SessionContext = createContext<Session | null>(null);
@@ -28,11 +31,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await api('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    try {
+      await api('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // The cookie and the session row may still be valid: never pretend the user left.
+      return false;
+    }
     setState({ status: 'signed-out', user: null });
+    return true;
   }, []);
 
-  const value = useMemo(() => ({ ...state, signOut }), [state, signOut]);
+  const expire = useCallback(() => setState({ status: 'signed-out', user: null }), []);
+
+  const value = useMemo(() => ({ ...state, signOut, expire }), [state, signOut, expire]);
   return <SessionContext value={value}>{children}</SessionContext>;
 }
 

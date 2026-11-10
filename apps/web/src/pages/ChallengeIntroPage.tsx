@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { createAttempt } from '../api/attempts';
+import { ApiError } from '../api/client';
 import { useAttempts } from '../api/useAttempts';
+import { useSession } from '../auth/session';
 import { competencyName, getChallenge } from '../content/challenges';
 import { GoalsTable } from './GoalsTable';
 import { NotFoundPage } from './NotFoundPage';
@@ -11,6 +13,7 @@ export function ChallengeIntroPage() {
   const { slug = '' } = useParams();
   const challenge = getChallenge(slug);
   const attempts = useAttempts();
+  const { expire } = useSession();
   const navigate = useNavigate();
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +26,8 @@ export function ChallengeIntroPage() {
     setError(null);
     createAttempt(challenge.slug).then(
       (attempt) => navigate(`/system-design/${challenge.slug}/attempts/${attempt.id}`),
-      () => {
+      (failure: unknown) => {
+        if (failure instanceof ApiError && failure.status === 401) return expire();
         setStarting(false);
         setError('The attempt could not be created. Try again.');
       },

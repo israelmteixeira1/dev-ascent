@@ -4,6 +4,7 @@ import { Play } from 'lucide-react';
 import { NODE_TYPES, type Attempt, type Challenge } from '@devascent/domain';
 import { getAttempt } from '../api/attempts';
 import { ApiError } from '../api/client';
+import { useSession } from '../auth/session';
 import { Canvas } from '../canvas/Canvas';
 import { useGraphHistory } from '../canvas/history';
 import { getChallenge } from '../content/challenges';
@@ -36,6 +37,7 @@ type Loaded = { attempt: Attempt } | { error: 'not_found' | 'unavailable' };
 
 export function WorkspacePage() {
   const { slug = '', attemptId = '' } = useParams();
+  const { expire } = useSession();
   // Tagged with the id it belongs to, so that opening another attempt never shows the previous one.
   const [state, setState] = useState<{ attemptId: string; loaded: Loaded } | null>(null);
   const loaded = state?.attemptId === attemptId ? state.loaded : null;
@@ -46,12 +48,14 @@ export function WorkspacePage() {
       (attempt) => setState({ attemptId, loaded: { attempt } }),
       (error: unknown) => {
         if (controller.signal.aborted) return;
+        // The session ended while the app was open: back to the login page, then here again.
+        if (error instanceof ApiError && error.status === 401) return expire();
         const reason = error instanceof ApiError && error.status === 404 ? 'not_found' : 'unavailable';
         setState({ attemptId, loaded: { error: reason } });
       },
     );
     return () => controller.abort();
-  }, [attemptId]);
+  }, [attemptId, expire]);
 
   if (!loaded) {
     return (

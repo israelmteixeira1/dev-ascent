@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   CSRF_HEADER,
   emptyGraph,
+  MAX_ELAPSED_SECONDS,
+  saveDraftRequestSchema,
   type ApiErrorBody,
   type Attempt,
   type DraftConflictDetails,
@@ -125,6 +127,40 @@ describe('attempts API', () => {
         updatedAt: attempt.updatedAt,
       },
     ]);
+  });
+
+  // Final review: the body limit must hold every draft the contract accepts. A control character is
+  // escaped as \u0001 in JSON, 6 bytes per character: the worst case for every text field at its limit.
+  it('accepts the largest valid draft', async () => {
+    const attempt = await create();
+    const worst = '\u0001';
+    const id = (i: number) => `${i}`.padEnd(64, worst);
+    const nodes = Array.from({ length: 150 }, (_, i) => ({
+      id: id(i),
+      kind: 'service',
+      label: worst.repeat(80),
+      position: { x: -123456.789, y: -123456.789 },
+      props: { replicas: 50, shards: 32, cacheHitRatio: 0.99, notes: worst.repeat(2000) },
+    }));
+    // 300 distinct pairs without self-loops: i → i+1 for the first 150, i → i+2 for the rest.
+    const edges = Array.from({ length: 300 }, (_, i) => ({
+      id: id(1000 + i),
+      source: id(i % 150),
+      target: id(((i % 150) + (i < 150 ? 1 : 2)) % 150),
+      kind: 'async',
+      intent: 'cache_aside',
+      label: worst.repeat(80),
+    }));
+    const body = {
+      graph: { schemaVersion: 1, nodes, edges },
+      explanation: worst.repeat(20_000),
+      elapsedSeconds: MAX_ELAPSED_SECONDS,
+      rowVersion: 1,
+    };
+    expect(saveDraftRequestSchema.safeParse(body).success).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(body))).toBeGreaterThan(2_000_000);
+    const res = await put(`/api/attempts/${attempt.id}/draft`, body);
+    expect(res.status).toBe(200);
   });
 
   it('accepts a 400 KB draft', async () => {

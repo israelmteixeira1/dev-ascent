@@ -6,11 +6,12 @@ const TEXT: Record<SaveStatus, string> = {
   pending: 'Saving…',
   saving: 'Saving…',
   retrying: 'Not saved — retrying',
+  rejected: 'Not saved — the server refused this draft',
   conflict: 'Not saved — this attempt changed in another tab',
   signed_out: 'Not saved — sign in again',
 };
 
-const PROBLEM: ReadonlySet<SaveStatus> = new Set(['retrying', 'conflict', 'signed_out']);
+const PROBLEM: ReadonlySet<SaveStatus> = new Set(['retrying', 'rejected', 'conflict', 'signed_out']);
 
 /** Spec §6.2: "Saving…", "Saved" or why the draft is not saved. Text, never colour alone. */
 export function SaveIndicator({ status }: { status: SaveStatus }) {

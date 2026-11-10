@@ -270,4 +270,54 @@ describe('useAutosave', () => {
     await advance(2000);
     expect(result.current).toMatchObject({ status: 'saved', unsavedChanges: false });
   });
+
+  // Final review: an undo back to the saved content while an older save is in flight must keep the
+  // warning, because that save will overwrite what the screen shows.
+  it('keeps the warning while a save is in flight, even after an undo', async () => {
+    const first = deferred<SavedDraft>();
+    const { spy, rerender, result } = setup(() =>
+      spy.mock.calls.length === 1 ? first.promise : Promise.resolve(saved(3)),
+    );
+    rerender({ graph: graphWith('a'), explanation: '', elapsedSeconds: 0 });
+    await advance(2000);
+    rerender({ graph: EMPTY, explanation: '', elapsedSeconds: 0 });
+    expect(result.current.unsavedChanges).toBe(true);
+
+    await act(async () => {
+      first.resolve(saved(2));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.unsavedChanges).toBe(true);
+    await advance(2000);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy.mock.calls[1]![1]).toMatchObject({ graph: EMPTY, rowVersion: 2 });
+    expect(result.current.unsavedChanges).toBe(false);
+  });
+
+  // Final review: leaving the workspace (Back, a link) within the 2 s wait must not drop the edit.
+  it('sends a pending change when the workspace unmounts', async () => {
+    const { spy, rerender, unmount } = setup(() => Promise.resolve(saved(2)));
+    rerender({ graph: graphWith('a'), explanation: '', elapsedSeconds: 0 });
+    await advance(500);
+    unmount();
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0]![1]).toMatchObject({ graph: graphWith('a') });
+    expect(spy.mock.calls[0]![2]).toEqual({ keepalive: true });
+  });
+
+  // Final review: a refusal (4xx other than 401, 409 and 429) never succeeds by retrying.
+  it('stops retrying when the server refuses the draft', async () => {
+    const { spy, rerender, result } = setup(() =>
+      Promise.reject(new ApiError(413, 'payload_too_large', 'The request is too large.')),
+    );
+    rerender({ graph: graphWith('a'), explanation: '', elapsedSeconds: 0 });
+    await advance(2000);
+    expect(result.current.status).toBe('rejected');
+    await advance(60_000);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(result.current.unsavedChanges).toBe(true);
+    rerender({ graph: graphWith('a', 'b'), explanation: '', elapsedSeconds: 0 });
+    await advance(2000);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
 });

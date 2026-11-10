@@ -51,6 +51,39 @@ describe('session', () => {
     );
   });
 
+  // Final review: a failed sign-out must not look like a finished one, since the session is still valid.
+  it('stays signed in and says so when signing out fails', async () => {
+    mockApi({
+      'GET /api/me': SIGNED_IN,
+      'POST /api/auth/logout': { status: 503, body: { error: { code: 'service_unavailable', message: 'Down.' } } },
+    });
+    renderAt('/');
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign out' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sign-out failed. Try again.');
+    expect(screen.getByText(/Signed in as Ada Lovelace/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Sign in with GitHub' })).toBeNull();
+  });
+
+  // Final review: a session that expired while the app was open leads back to the login page.
+  it('sends to the login page when the session expired while browsing', async () => {
+    mockApi({ 'GET /api/me': SIGNED_IN, 'GET /api/attempts': SIGNED_OUT });
+    renderAt('/system-design');
+    expect(await screen.findByRole('link', { name: 'Sign in with GitHub' })).toHaveAttribute(
+      'href',
+      '/api/auth/github?next=%2Fsystem-design',
+    );
+  });
+
+  it('sends to the login page when an attempt cannot be opened without a session', async () => {
+    const id = '00000000-0000-4000-8000-000000000009';
+    mockApi({ 'GET /api/me': SIGNED_IN, [`GET /api/attempts/${id}`]: SIGNED_OUT });
+    renderAt(`/system-design/url-shortener/attempts/${id}`);
+    expect(await screen.findByRole('link', { name: 'Sign in with GitHub' })).toHaveAttribute(
+      'href',
+      `/api/auth/github?next=${encodeURIComponent(`/system-design/url-shortener/attempts/${id}`)}`,
+    );
+  });
+
   it('signs out', async () => {
     const spy = mockApi({ 'GET /api/me': SIGNED_IN, 'POST /api/auth/logout': { status: 204 } });
     renderAt('/');
