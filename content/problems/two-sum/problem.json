@@ -1,0 +1,19 @@
+{
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "leetcodeUrl": "https://leetcode.com/problems/two-sum/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "hash-map",
+  "difficulty": "easy",
+  "priority": 1,
+  "order": 1,
+  "summary": "Return the indices of the two numbers that add up to a target.",
+  "kind": "function",
+  "entrypoint": "two_sum",
+  "functionSignature": "def two_sum(nums: list[int], target: int) -> list[int]",
+  "starterCode": "def two_sum(nums: list[int], target: int) -> list[int]:\n    pass\n",
+  "comparator": "unordered",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

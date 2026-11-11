@@ -1,0 +1,34 @@
+{
+  "deck": "hash-maps",
+  "cards": [
+    {
+      "slug": "how-it-works",
+      "tracks": ["general"],
+      "tags": ["data-structures", "hash-map"],
+      "type": "explain-out-loud",
+      "question": "How does a hash map store a key and find it again?",
+      "answer": "A hash map keeps an array of buckets. To store a key it computes hash(key), turns that number into a bucket index (hash modulo the capacity, or a bit mask when the capacity is a power of two) and stores the key-value pair in that bucket. A lookup repeats the same computation and then compares keys with equality inside the bucket, because different keys can land in the same one. With a good hash function and a bounded load factor, insert, lookup and delete take O(1) on average.",
+      "keyPoints": [
+        "hash(key) is mapped to a bucket index",
+        "Equality, not the hash, decides which entry is the key",
+        "Average O(1) depends on a good hash and a bounded load factor"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "collision-resolution",
+      "tracks": ["general"],
+      "tags": ["data-structures", "hash-map"],
+      "type": "concept",
+      "question": "What are the two main ways a hash map resolves collisions, and how do they differ?",
+      "answer": "Separate chaining keeps a small list (or tree) per bucket, so colliding entries sit together in the same bucket. Open addressing stores every entry directly in the array and, on a collision, probes other slots: linear probing tries the next slot, quadratic probing jumps by growing squares, and double hashing uses a second hash function to choose the step. Chaining degrades gracefully as the table fills; open addressing is more cache-friendly but needs a lower load factor and tombstones so deletions do not break probe chains. Java's HashMap uses chaining, while CPython's dict uses open addressing.",
+      "keyPoints": [
+        "Chaining: a list or tree per bucket",
+        "Open addressing: probe with linear, quadratic or double hashing",
+        "Open addressing needs tombstones on delete and a lower load factor",
+        "Java HashMap chains; CPython dict uses open addressing"
+      ],
+      "status": "draft"
+    }
+  ]
+}

@@ -2,11 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { deckFileSchema } from '../src/content/cards';
+import { problemSchema, problemTestsSchemaFor } from '../src/content/problems';
 import { challengeSchema, competencyTreeSchema, flattenCompetencySlugs } from '../src/content/schema';
+import { tracksSchema } from '../src/content/tracks';
 
 const root = fileURLToPath(new URL('../../../content/', import.meta.url));
 const readJson = (file: string): unknown => JSON.parse(fs.readFileSync(file, 'utf8'));
-const slugs = fs.readdirSync(path.join(root, 'challenges'));
+/** A missing folder lists as empty, so the "has at least one" checks fail cleanly instead of crashing. */
+const list = (dir: string): string[] =>
+  fs.existsSync(path.join(root, dir)) ? fs.readdirSync(path.join(root, dir)) : [];
+const slugs = list('challenges');
 const tree = competencyTreeSchema.parse(readJson(path.join(root, 'competencies.json')));
 
 describe('content', () => {
@@ -43,5 +49,62 @@ describe('content', () => {
   it('rejects a challenge with an unknown goal metric', () => {
     const c = readJson(path.join(root, 'challenges/url-shortener/challenge.json')) as { goals: unknown[] };
     expect(challengeSchema.safeParse({ ...c, goals: [{ metric: 'vibes', target: 1 }] }).success).toBe(false);
+  });
+});
+
+const knownTracks = new Set(
+  fs.existsSync(path.join(root, 'tracks.json'))
+    ? tracksSchema.parse(readJson(path.join(root, 'tracks.json'))).map((t) => t.slug)
+    : [],
+);
+
+describe('tracks', () => {
+  it('has the general track and the Telnyx track', () => {
+    expect(knownTracks).toContain('general');
+    expect(knownTracks).toContain('telnyx-ai-fde');
+  });
+});
+
+const deckFiles = list('flashcards');
+
+describe('flashcards', () => {
+  it('has at least one deck', () => expect(deckFiles.length).toBeGreaterThan(0));
+
+  it.each(deckFiles)('%s is a JSON deck named after its file', (file) => {
+    const deck = deckFileSchema.parse(readJson(path.join(root, 'flashcards', file)));
+    expect(file).toBe(`${deck.deck}.json`);
+  });
+
+  it.each(deckFiles)('%s only uses known tracks', (file) => {
+    const deck = deckFileSchema.parse(readJson(path.join(root, 'flashcards', file)));
+    deck.cards.flatMap((c) => c.tracks).forEach((t) => expect(knownTracks).toContain(t));
+  });
+});
+
+const problemSlugs = list('problems');
+const readProblem = (slug: string) => problemSchema.parse(readJson(path.join(root, 'problems', slug, 'problem.json')));
+
+describe('problems', () => {
+  it('has at least one problem', () => expect(problemSlugs.length).toBeGreaterThan(0));
+
+  it.each(problemSlugs)('%s/problem.json is valid and named after its folder', (slug) => {
+    expect(readProblem(slug).slug).toBe(slug);
+  });
+
+  it.each(problemSlugs)('%s/tests.json matches the kind of its problem', (slug) => {
+    const tests = readJson(path.join(root, 'problems', slug, 'tests.json'));
+    problemTestsSchemaFor(readProblem(slug).kind).parse(tests);
+  });
+
+  it.each(problemSlugs)('%s only uses known tracks', (slug) => {
+    readProblem(slug).tracks.forEach((t) => expect(knownTracks).toContain(t));
+  });
+
+  it('no two problems share a place in the queue', () => {
+    const places = problemSlugs.map((slug) => {
+      const p = readProblem(slug);
+      return `${p.priority}/${p.order}`;
+    });
+    expect(new Set(places).size).toBe(places.length);
   });
 });

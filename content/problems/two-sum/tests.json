@@ -1,0 +1,13 @@
+{
+  "visible": [
+    { "name": "pair at the start", "args": [[2, 7, 11, 15], 9], "expected": [0, 1] },
+    { "name": "pair not at the start", "args": [[3, 2, 4], 6], "expected": [1, 2] },
+    { "name": "equal values", "args": [[3, 3], 6], "expected": [0, 1] }
+  ],
+  "hidden": [
+    { "name": "smallest input", "args": [[1, 2], 3], "expected": [0, 1] },
+    { "name": "negative numbers", "args": [[-3, 4, 3, 90], 0], "expected": [0, 2] },
+    { "name": "zeros", "args": [[0, 4, 3, 0], 0], "expected": [0, 3] },
+    { "name": "values at the limits", "args": [[1000000000, -1000000000, 5], 0], "expected": [0, 1] }
+  ]
+}
