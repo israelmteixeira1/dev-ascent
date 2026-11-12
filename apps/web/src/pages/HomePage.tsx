@@ -37,6 +37,14 @@ export function HomePage() {
             </span>
           </Link>
         </li>
+        <li>
+          <Link className={styles.card} to="/flashcards">
+            <span className={styles.cardTitle}>Flashcards</span>
+            <span className={styles.cardText}>
+              Review concepts every day with spaced repetition and rehearse your behavioral stories.
+            </span>
+          </Link>
+        </li>
       </ul>
     </main>
   );
