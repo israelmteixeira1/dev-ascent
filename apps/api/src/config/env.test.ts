@@ -28,6 +28,28 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...BASE, NODE_ENV: 'production' })).toThrow(/GITHUB_CLIENT_ID/);
   });
 
+  it('runs the judge locally outside production and turns it off in production', () => {
+    expect(parseEnv(BASE).judge).toEqual({ mode: 'local', pythonBin: null });
+    expect(parseEnv({ ...BASE, ...GITHUB, NODE_ENV: 'production' }).judge).toEqual({
+      mode: 'disabled',
+      pythonBin: null,
+    });
+    expect(parseEnv({ ...BASE, JUDGE_MODE: 'disabled', PYTHON_BIN: 'C:\\Python311\\python.exe' }).judge).toEqual({
+      mode: 'disabled',
+      pythonBin: 'C:\\Python311\\python.exe',
+    });
+  });
+
+  it('refuses to run the judge without isolation in production', () => {
+    expect(() => parseEnv({ ...BASE, ...GITHUB, NODE_ENV: 'production', JUDGE_MODE: 'local' })).toThrow(
+      /Invalid configuration: JUDGE_MODE$/,
+    );
+  });
+
+  it('refuses an unknown judge mode', () => {
+    expect(() => parseEnv({ ...BASE, JUDGE_MODE: 'docker' })).toThrow(/JUDGE_MODE/);
+  });
+
   it('never echoes values in its errors', () => {
     let message = '';
     try {
