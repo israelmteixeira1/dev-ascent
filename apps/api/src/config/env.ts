@@ -11,6 +11,11 @@ export type Env = {
   allowedGithubIds: ReadonlySet<string>;
   testLogin: boolean;
   sessionTtlDays: number;
+  /**
+   * `local` runs Python straight on this machine, without isolation: only for the author's own
+   * code on their own computer. `disabled` turns the arena's judge off. Docker comes later.
+   */
+  judge: { mode: 'local' | 'disabled'; pythonBin: string | null };
 };
 
 /** The parsed configuration, injected by type wherever it is needed. */
@@ -39,6 +44,9 @@ const schema = z.object({
     .refine((value) => value.split(',').every((id) => id.trim() === '' || /^\d+$/.test(id.trim()))),
   AUTH_TEST_LOGIN: z.enum(['true', 'false']).default('false'),
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+  JUDGE_MODE: z.enum(['local', 'disabled']).optional(),
+  /** A Python interpreter; without it the judge uses `py -3` on Windows and `python3` elsewhere. */
+  PYTHON_BIN: z.string().optional(),
 });
 
 /**
@@ -66,6 +74,8 @@ export function parseEnv(raw: Record<string, string | undefined>): Env {
     if (!hasId) invalid.add('GITHUB_CLIENT_ID');
     if (!hasSecret) invalid.add('GITHUB_CLIENT_SECRET');
     if (values.AUTH_TEST_LOGIN === 'true') invalid.add('AUTH_TEST_LOGIN');
+    // A server must never run submitted code without isolation.
+    if (values.JUDGE_MODE === 'local') invalid.add('JUDGE_MODE');
   }
   if (invalid.size > 0) throw new Error(`Invalid configuration: ${[...invalid].sort().join(', ')}`);
 
@@ -85,5 +95,9 @@ export function parseEnv(raw: Record<string, string | undefined>): Env {
     ),
     testLogin: values.AUTH_TEST_LOGIN === 'true',
     sessionTtlDays: values.SESSION_TTL_DAYS,
+    judge: {
+      mode: values.JUDGE_MODE ?? (values.NODE_ENV === 'production' ? 'disabled' : 'local'),
+      pythonBin: values.PYTHON_BIN ?? null,
+    },
   };
 }

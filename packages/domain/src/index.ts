@@ -7,6 +7,7 @@ export * from './content/tracks';
 export * from './content/cards';
 export * from './content/problems';
 export * from './srs/leitner';
+export * from './judge/judge';
 export * from './contract/api';
 export * from './contract/attempts';
 export * from './contract/flashcards';
