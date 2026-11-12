@@ -1,0 +1,18 @@
+{
+  "slug": "valid-parentheses",
+  "title": "Valid Parentheses",
+  "leetcodeUrl": "https://leetcode.com/problems/valid-parentheses/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "stack",
+  "difficulty": "easy",
+  "priority": 2,
+  "order": 3,
+  "summary": "Tell whether every bracket in the string is closed by the right type in the right order.",
+  "kind": "function",
+  "entrypoint": "is_valid",
+  "functionSignature": "def is_valid(s: str) -> bool",
+  "starterCode": "def is_valid(s: str) -> bool:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

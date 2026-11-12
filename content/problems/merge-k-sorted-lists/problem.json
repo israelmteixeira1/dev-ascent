@@ -1,0 +1,20 @@
+{
+  "slug": "merge-k-sorted-lists",
+  "title": "Merge k Sorted Lists",
+  "leetcodeUrl": "https://leetcode.com/problems/merge-k-sorted-lists/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "heap",
+  "difficulty": "hard",
+  "priority": 2,
+  "order": 8,
+  "summary": "Merge k sorted linked lists into one sorted linked list.",
+  "kind": "function",
+  "entrypoint": "merge_k_lists",
+  "functionSignature": "def merge_k_lists(lists: list[Optional[ListNode]]) -> Optional[ListNode]",
+  "starterCode": "from typing import Optional\n\n# ListNode is provided by the judge:\n# class ListNode:\n#     def __init__(self, val=0, next=None): ...\n\ndef merge_k_lists(lists: list[Optional[ListNode]]) -> Optional[ListNode]:\n    pass\n",
+  "argTypes": ["linked-lists"],
+  "returnType": "linked-list",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

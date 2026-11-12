@@ -1,0 +1,56 @@
+{
+  "visible": [
+    {
+      "name": "one pair",
+      "args": ["()"],
+      "expected": true
+    },
+    {
+      "name": "three pairs",
+      "args": ["()[]{}"],
+      "expected": true
+    },
+    {
+      "name": "wrong type",
+      "args": ["(]"],
+      "expected": false
+    }
+  ],
+  "hidden": [
+    {
+      "name": "nested",
+      "args": ["([])"],
+      "expected": true
+    },
+    {
+      "name": "interleaved",
+      "args": ["([)]"],
+      "expected": false
+    },
+    {
+      "name": "nested braces",
+      "args": ["{[]}"],
+      "expected": true
+    },
+    {
+      "name": "only an opener",
+      "args": ["("],
+      "expected": false
+    },
+    {
+      "name": "only a closer",
+      "args": [")"],
+      "expected": false
+    },
+    {
+      "name": "two openers",
+      "args": ["(("],
+      "expected": false
+    },
+    {
+      "name": "empty string (outside the LeetCode limits)",
+      "args": [""],
+      "expected": true
+    }
+  ]
+}

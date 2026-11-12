@@ -1,0 +1,172 @@
+{
+  "visible": [
+    {
+      "name": "minimum after a pop",
+      "ops": [
+        {
+          "method": "MinStack",
+          "args": []
+        },
+        {
+          "method": "push",
+          "args": [-2]
+        },
+        {
+          "method": "push",
+          "args": [0]
+        },
+        {
+          "method": "push",
+          "args": [-3]
+        },
+        {
+          "method": "getMin",
+          "args": []
+        },
+        {
+          "method": "pop",
+          "args": []
+        },
+        {
+          "method": "top",
+          "args": []
+        },
+        {
+          "method": "getMin",
+          "args": []
+        }
+      ],
+      "expected": [null, null, null, null, -3, null, 0, -2]
+    },
+    {
+      "name": "one value",
+      "ops": [
+        {
+          "method": "MinStack",
+          "args": []
+        },
+        {
+          "method": "push",
+          "args": [1]
+        },
+        {
+          "method": "top",
+          "args": []
+        },
+        {
+          "method": "getMin",
+          "args": []
+        }
+      ],
+      "expected": [null, null, 1, 1]
+    }
+  ],
+  "hidden": [
+    {
+      "name": "the minimum pushed twice",
+      "ops": [
+        {
+          "method": "MinStack",
+          "args": []
+        },
+        {
+          "method": "push",
+          "args": [0]
+        },
+        {
+          "method": "push",
+          "args": [1]
+        },
+        {
+          "method": "push",
+          "args": [0]
+        },
+        {
+          "method": "getMin",
+          "args": []
+        },
+        {
+          "method": "pop",
+          "args": []
+        },
+        {
+          "method": "getMin",
+          "args": []
+        }
+      ],
+      "expected": [null, null, null, null, 0, null, 0]
+    },
+    {
+      "name": "values at the limits",
+      "ops": [
+        {
+          "method": "MinStack",
+          "args": []
+        },
+        {
+          "method": "push",
+          "args": [2147483647]
+        },
+        {
+          "method": "push",
+          "args": [-2147483648]
+        },
+        {
+          "method": "getMin",
+          "args": []
+        },
+        {
+          "method": "pop",
+          "args": []
+        },
+        {
+          "method": "getMin",
+          "args": []
+        }
+      ],
+      "expected": [null, null, null, -2147483648, null, 2147483647]
+    },
+    {
+      "name": "decreasing pushes, then pops",
+      "ops": [
+        {
+          "method": "MinStack",
+          "args": []
+        },
+        {
+          "method": "push",
+          "args": [3]
+        },
+        {
+          "method": "push",
+          "args": [2]
+        },
+        {
+          "method": "push",
+          "args": [1]
+        },
+        {
+          "method": "getMin",
+          "args": []
+        },
+        {
+          "method": "pop",
+          "args": []
+        },
+        {
+          "method": "getMin",
+          "args": []
+        },
+        {
+          "method": "pop",
+          "args": []
+        },
+        {
+          "method": "getMin",
+          "args": []
+        }
+      ],
+      "expected": [null, null, null, null, 1, null, 2, null, 3]
+    }
+  ]
+}

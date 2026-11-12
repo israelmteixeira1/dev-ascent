@@ -1,0 +1,19 @@
+{
+  "slug": "maximum-depth-of-binary-tree",
+  "title": "Maximum Depth of Binary Tree",
+  "leetcodeUrl": "https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "tree-dfs",
+  "difficulty": "easy",
+  "priority": 2,
+  "order": 10,
+  "summary": "Count the nodes on the longest path from the root down to a leaf.",
+  "kind": "function",
+  "entrypoint": "max_depth",
+  "functionSignature": "def max_depth(root: Optional[TreeNode]) -> int",
+  "starterCode": "from typing import Optional\n\n# TreeNode is provided by the judge:\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None): ...\n\ndef max_depth(root: Optional[TreeNode]) -> int:\n    pass\n",
+  "argTypes": ["tree"],
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

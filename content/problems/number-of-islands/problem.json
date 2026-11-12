@@ -1,0 +1,18 @@
+{
+  "slug": "number-of-islands",
+  "title": "Number of Islands",
+  "leetcodeUrl": "https://leetcode.com/problems/number-of-islands/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "graph-traversal",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 7,
+  "summary": "Count the groups of '1' cells connected up, down, left or right in a grid.",
+  "kind": "function",
+  "entrypoint": "num_islands",
+  "functionSignature": "def num_islands(grid: list[list[str]]) -> int",
+  "starterCode": "def num_islands(grid: list[list[str]]) -> int:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

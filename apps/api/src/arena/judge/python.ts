@@ -27,6 +27,25 @@ export function resolveInterpreter(python: PythonCommand, timeoutMs = 10_000): P
   });
 }
 
+const resolved = new Map<string, Promise<PythonCommand>>();
+
+/**
+ * The interpreter behind a command, found once per process. A failure is not kept: the next run
+ * tries again, since Python may have been installed in the meantime.
+ */
+export function interpreterFor(python: PythonCommand): Promise<PythonCommand> {
+  const key = [python.command, ...python.args].join('\0');
+  let found = resolved.get(key);
+  if (!found) {
+    found = resolveInterpreter(python).catch((error: unknown) => {
+      resolved.delete(key);
+      throw error;
+    });
+    resolved.set(key, found);
+  }
+  return found;
+}
+
 /** Only what Python needs to start. Secrets such as DATABASE_URL never reach the solution. */
 const KEPT_VARIABLES = new Set(['PATH', 'SYSTEMROOT', 'TEMP', 'TMP']);
 

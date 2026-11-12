@@ -1,0 +1,82 @@
+{
+  "visible": [
+    {
+      "name": "one prerequisite",
+      "args": [2, [[1, 0]]],
+      "expected": true
+    },
+    {
+      "name": "two courses need each other",
+      "args": [
+        2,
+        [
+          [1, 0],
+          [0, 1]
+        ]
+      ],
+      "expected": false
+    },
+    {
+      "name": "no prerequisites",
+      "args": [1, []],
+      "expected": true
+    }
+  ],
+  "hidden": [
+    {
+      "name": "many courses, no prerequisites",
+      "args": [5, []],
+      "expected": true
+    },
+    {
+      "name": "cycle of three",
+      "args": [
+        3,
+        [
+          [0, 1],
+          [1, 2],
+          [2, 0]
+        ]
+      ],
+      "expected": false
+    },
+    {
+      "name": "a chain",
+      "args": [
+        4,
+        [
+          [1, 0],
+          [2, 1],
+          [3, 2]
+        ]
+      ],
+      "expected": true
+    },
+    {
+      "name": "two paths to one course",
+      "args": [
+        3,
+        [
+          [1, 0],
+          [2, 0],
+          [2, 1]
+        ]
+      ],
+      "expected": true
+    },
+    {
+      "name": "cycle in a separate group",
+      "args": [
+        6,
+        [
+          [1, 0],
+          [2, 1],
+          [3, 4],
+          [4, 5],
+          [5, 3]
+        ]
+      ],
+      "expected": false
+    }
+  ]
+}

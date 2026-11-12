@@ -1,0 +1,18 @@
+{
+  "slug": "min-stack",
+  "title": "Min Stack",
+  "leetcodeUrl": "https://leetcode.com/problems/min-stack/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "stack",
+  "difficulty": "medium",
+  "priority": 2,
+  "order": 5,
+  "summary": "Build a stack that also returns its minimum in O(1).",
+  "kind": "operations",
+  "entrypoint": "MinStack",
+  "functionSignature": "class MinStack:\n    def __init__(self): ...\n    def push(self, val: int) -> None: ...\n    def pop(self) -> None: ...\n    def top(self) -> int: ...\n    def getMin(self) -> int: ...",
+  "starterCode": "class MinStack:\n    def __init__(self):\n        pass\n\n    def push(self, val: int) -> None:\n        pass\n\n    def pop(self) -> None:\n        pass\n\n    def top(self) -> int:\n        pass\n\n    def getMin(self) -> int:\n        pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

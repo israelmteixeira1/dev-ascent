@@ -1,0 +1,56 @@
+{
+  "visible": [
+    {
+      "name": "sentence with punctuation",
+      "args": ["A man, a plan, a canal: Panama"],
+      "expected": true
+    },
+    {
+      "name": "not a palindrome",
+      "args": ["race a car"],
+      "expected": false
+    },
+    {
+      "name": "only a space",
+      "args": [" "],
+      "expected": true
+    }
+  ],
+  "hidden": [
+    {
+      "name": "empty string (outside the LeetCode limits)",
+      "args": [""],
+      "expected": true
+    },
+    {
+      "name": "one letter",
+      "args": ["a"],
+      "expected": true
+    },
+    {
+      "name": "digits are not letters",
+      "args": ["0P"],
+      "expected": false
+    },
+    {
+      "name": "underscore is skipped",
+      "args": ["ab_a"],
+      "expected": true
+    },
+    {
+      "name": "quotes and mixed case",
+      "args": ["No 'x' in Nixon"],
+      "expected": true
+    },
+    {
+      "name": "digits",
+      "args": ["12321"],
+      "expected": true
+    },
+    {
+      "name": "digit and letter mix",
+      "args": ["1a2"],
+      "expected": false
+    }
+  ]
+}

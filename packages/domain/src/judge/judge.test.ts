@@ -37,6 +37,38 @@ describe('answerMatches', () => {
     });
   });
 
+  describe('unordered-deep', () => {
+    it.each([
+      [[[1, 2], [3]], [[3], [2, 1]], true],
+      [[['eat', 'tea'], ['bat']], [['bat'], ['tea', 'eat']], true],
+      [
+        [
+          [-1, -1, 2],
+          [-1, 0, 1],
+        ],
+        [
+          [0, 1, -1],
+          [2, -1, -1],
+        ],
+        true,
+      ],
+      [[[1, 2], [3]], [[1], [2, 3]], false],
+      [[[1, 1]], [[1]], false],
+      [
+        [[1, 2]],
+        [
+          [1, 2],
+          [1, 2],
+        ],
+        false,
+      ],
+      [[], [], true],
+      [[[1]], 'nope', false],
+    ])('%j vs %j → %s', (expected, actual, result) => {
+      expect(answerMatches('unordered-deep', expected, actual)).toBe(result);
+    });
+  });
+
   describe('float', () => {
     it.each([
       [2.5, 2.50001, 1e-4, true],

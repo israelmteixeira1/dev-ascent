@@ -1,0 +1,18 @@
+{
+  "slug": "lru-cache",
+  "title": "LRU Cache",
+  "leetcodeUrl": "https://leetcode.com/problems/lru-cache/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "design",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 6,
+  "summary": "Build a fixed-size cache with O(1) get and put that evicts the least recently used key.",
+  "kind": "operations",
+  "entrypoint": "LRUCache",
+  "functionSignature": "class LRUCache:\n    def __init__(self, capacity: int): ...\n    def get(self, key: int) -> int: ...\n    def put(self, key: int, value: int) -> None: ...",
+  "starterCode": "class LRUCache:\n    def __init__(self, capacity: int):\n        pass\n\n    def get(self, key: int) -> int:\n        pass\n\n    def put(self, key: int, value: int) -> None:\n        pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

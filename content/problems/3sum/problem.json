@@ -1,0 +1,19 @@
+{
+  "slug": "3sum",
+  "title": "3Sum",
+  "leetcodeUrl": "https://leetcode.com/problems/3sum/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "two-pointers",
+  "difficulty": "medium",
+  "priority": 2,
+  "order": 2,
+  "summary": "List every distinct triplet that sums to zero; any order of triplets and of values.",
+  "kind": "function",
+  "entrypoint": "three_sum",
+  "functionSignature": "def three_sum(nums: list[int]) -> list[list[int]]",
+  "starterCode": "def three_sum(nums: list[int]) -> list[list[int]]:\n    pass\n",
+  "comparator": "unordered-deep",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

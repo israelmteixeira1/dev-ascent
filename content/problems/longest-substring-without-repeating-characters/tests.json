@@ -1,0 +1,56 @@
+{
+  "visible": [
+    {
+      "name": "repeating pattern",
+      "args": ["abcabcbb"],
+      "expected": 3
+    },
+    {
+      "name": "one letter repeated",
+      "args": ["bbbbb"],
+      "expected": 1
+    },
+    {
+      "name": "answer in the middle",
+      "args": ["pwwkew"],
+      "expected": 3
+    }
+  ],
+  "hidden": [
+    {
+      "name": "empty string",
+      "args": [""],
+      "expected": 0
+    },
+    {
+      "name": "a single space",
+      "args": [" "],
+      "expected": 1
+    },
+    {
+      "name": "window must not jump back",
+      "args": ["dvdf"],
+      "expected": 3
+    },
+    {
+      "name": "repeat inside the window",
+      "args": ["abba"],
+      "expected": 2
+    },
+    {
+      "name": "repeat far behind",
+      "args": ["tmmzuxt"],
+      "expected": 5
+    },
+    {
+      "name": "two letters",
+      "args": ["au"],
+      "expected": 2
+    },
+    {
+      "name": "symbols and spaces",
+      "args": ["!@# !@"],
+      "expected": 4
+    }
+  ]
+}

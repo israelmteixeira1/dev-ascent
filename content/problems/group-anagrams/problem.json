@@ -1,0 +1,19 @@
+{
+  "slug": "group-anagrams",
+  "title": "Group Anagrams",
+  "leetcodeUrl": "https://leetcode.com/problems/group-anagrams/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "hash-map",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 3,
+  "summary": "Group the words that are anagrams of each other; any order of groups and words.",
+  "kind": "function",
+  "entrypoint": "group_anagrams",
+  "functionSignature": "def group_anagrams(strs: list[str]) -> list[list[str]]",
+  "starterCode": "def group_anagrams(strs: list[str]) -> list[list[str]]:\n    pass\n",
+  "comparator": "unordered-deep",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

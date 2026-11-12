@@ -1,0 +1,46 @@
+{
+  "visible": [
+    {
+      "name": "three groups",
+      "args": [["eat", "tea", "tan", "ate", "nat", "bat"]],
+      "expected": [["bat"], ["nat", "tan"], ["ate", "eat", "tea"]]
+    },
+    {
+      "name": "one empty word",
+      "args": [[""]],
+      "expected": [[""]]
+    },
+    {
+      "name": "one letter",
+      "args": [["a"]],
+      "expected": [["a"]]
+    }
+  ],
+  "hidden": [
+    {
+      "name": "empty list (outside the LeetCode limits)",
+      "args": [[]],
+      "expected": []
+    },
+    {
+      "name": "two empty words",
+      "args": [["", ""]],
+      "expected": [["", ""]]
+    },
+    {
+      "name": "the same word twice",
+      "args": [["ab", "ba", "ab"]],
+      "expected": [["ab", "ba", "ab"]]
+    },
+    {
+      "name": "no anagrams",
+      "args": [["abc", "def"]],
+      "expected": [["abc"], ["def"]]
+    },
+    {
+      "name": "same letters, different counts",
+      "args": [["aab", "abb"]],
+      "expected": [["aab"], ["abb"]]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "slug": "top-k-frequent-elements",
+  "title": "Top K Frequent Elements",
+  "leetcodeUrl": "https://leetcode.com/problems/top-k-frequent-elements/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "heap",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 4,
+  "summary": "Return the k values that appear most often, in any order.",
+  "kind": "function",
+  "entrypoint": "top_k_frequent",
+  "functionSignature": "def top_k_frequent(nums: list[int], k: int) -> list[int]",
+  "starterCode": "def top_k_frequent(nums: list[int], k: int) -> list[int]:\n    pass\n",
+  "comparator": "unordered",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

@@ -3,13 +3,16 @@ import { randomBytes } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { JUDGE_LIMITS, type ProblemCase, type ProblemKind } from '@devascent/domain';
+import { JUDGE_LIMITS, type ArgType, type ProblemCase, type ProblemKind, type ReturnType } from '@devascent/domain';
 import harnessSource from './harness.py?raw';
 import { minimalEnv, type PythonCommand } from './python';
 
 export type RunSpec = {
   kind: ProblemKind;
   entrypoint: string;
+  /** How each argument and the answer cross into Python: JSON, ListNode or TreeNode. */
+  argTypes?: readonly ArgType[];
+  returnType?: ReturnType;
   cases: ProblemCase[];
   source: string;
   /** Per case. The run stops at the first case that goes past it. */
@@ -218,6 +221,8 @@ function execute(
         nonce,
         kind: spec.kind,
         entrypoint: spec.entrypoint,
+        argTypes: spec.argTypes ?? null,
+        returnType: spec.returnType ?? 'json',
         solutionPath,
         cases: spec.cases,
         limits: { stdout: JUDGE_LIMITS.maxStdoutChars, error: JUDGE_LIMITS.maxErrorChars },

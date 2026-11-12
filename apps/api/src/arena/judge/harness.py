@@ -48,24 +48,119 @@ def describe_error(error, solution_path, limit):
     return text[:limit]
 
 
+class ListNode:
+    """LeetCode's singly linked list node, available to the solution without an import."""
+
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+
+class TreeNode:
+    """LeetCode's binary tree node, available to the solution without an import."""
+
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+# A longer list than any test builds means the solution made a cycle.
+MAX_NODES = 1000000
+
+
+def to_linked_list(values):
+    head = None
+    for value in reversed(values):
+        head = ListNode(value, head)
+    return head
+
+
+def from_linked_list(node):
+    values = []
+    while node is not None:
+        if len(values) >= MAX_NODES:
+            raise ValueError("the returned linked list has a cycle")
+        values.append(node.val)
+        node = node.next
+    return values
+
+
+def to_tree(values):
+    """Level order, None for a missing child, as LeetCode writes trees."""
+    if not values or values[0] is None:
+        return None
+    root = TreeNode(values[0])
+    queue, index = [root], 1
+    for node in queue:
+        if index >= len(values):
+            break
+        for side in ("left", "right"):
+            if index < len(values) and values[index] is not None:
+                child = TreeNode(values[index])
+                setattr(node, side, child)
+                queue.append(child)
+            index += 1
+    return root
+
+
+def from_tree(root):
+    values, queue = [], [root]
+    for node in queue:
+        if len(values) >= MAX_NODES:
+            raise ValueError("the returned tree has a cycle")
+        if node is None:
+            values.append(None)
+            continue
+        values.append(node.val)
+        queue.extend([node.left, node.right])
+    while values and values[-1] is None:
+        values.pop()
+    return values
+
+
+TO_PYTHON = {
+    "json": lambda value: value,
+    "linked-list": to_linked_list,
+    "linked-lists": lambda lists: [to_linked_list(values) for values in lists],
+    "tree": to_tree,
+}
+FROM_PYTHON = {"json": lambda value: value, "linked-list": from_linked_list, "tree": from_tree}
+
+
+def camel_case(name):
+    first, *rest = name.split("_")
+    return first + "".join(word[:1].upper() + word[1:] for word in rest)
+
+
 def load(solution_path, entrypoint):
     spec = importlib.util.spec_from_file_location("solution", solution_path)
     module = importlib.util.module_from_spec(spec)
+    # Defined before the code runs, so `Optional[ListNode]` in a signature resolves.
+    module.ListNode = ListNode
+    module.TreeNode = TreeNode
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         spec.loader.exec_module(module)
-    target = getattr(module, entrypoint, None)
-    if target is None:
-        # LeetCode style: the function lives in a Solution class.
-        holder = getattr(module, "Solution", None)
-        if holder is not None and hasattr(holder, entrypoint):
-            target = getattr(holder(), entrypoint)
-    if target is None:
-        raise NameError("solution.py defines no '%s'" % entrypoint)
-    return target
+    # Code pasted from LeetCode keeps its camelCase name inside a Solution class.
+    names = [entrypoint, camel_case(entrypoint)]
+    holder = getattr(module, "Solution", None)
+    for name in names:
+        if hasattr(module, name):
+            return getattr(module, name)
+        if holder is not None and hasattr(holder, name):
+            return getattr(holder(), name)
+    raise NameError("solution.py defines no '%s'" % entrypoint)
 
 
-def run_function(target, case):
-    return target(*case["args"])
+def function_runner(arg_types, return_type):
+    def run(target, case):
+        types = arg_types or ["json"] * len(case["args"])
+        if len(types) != len(case["args"]):
+            raise ValueError("the problem gives %d argument types for %d arguments" % (len(types), len(case["args"])))
+        args = [TO_PYTHON[kind](value) for kind, value in zip(types, case["args"])]
+        return FROM_PYTHON[return_type](target(*args))
+
+    return run
 
 
 def run_operations(target, case):
@@ -92,7 +187,10 @@ def main():
         return
     emit(nonce, {"event": "ready"})
 
-    run = run_operations if spec["kind"] == "operations" else run_function
+    if spec["kind"] == "operations":
+        run = run_operations
+    else:
+        run = function_runner(spec.get("argTypes"), spec.get("returnType", "json"))
     for case in spec["cases"]:
         output = io.StringIO()
         started = time.perf_counter()

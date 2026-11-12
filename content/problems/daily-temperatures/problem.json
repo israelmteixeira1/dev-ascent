@@ -1,0 +1,18 @@
+{
+  "slug": "daily-temperatures",
+  "title": "Daily Temperatures",
+  "leetcodeUrl": "https://leetcode.com/problems/daily-temperatures/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "monotonic-stack",
+  "difficulty": "medium",
+  "priority": 2,
+  "order": 4,
+  "summary": "For each day, count the days until a warmer one, or 0 if none comes.",
+  "kind": "function",
+  "entrypoint": "daily_temperatures",
+  "functionSignature": "def daily_temperatures(temperatures: list[int]) -> list[int]",
+  "starterCode": "def daily_temperatures(temperatures: list[int]) -> list[int]:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

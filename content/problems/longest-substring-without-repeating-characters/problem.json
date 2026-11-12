@@ -1,0 +1,18 @@
+{
+  "slug": "longest-substring-without-repeating-characters",
+  "title": "Longest Substring Without Repeating Characters",
+  "leetcodeUrl": "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "sliding-window",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 5,
+  "summary": "Find the length of the longest run of characters with no repeats.",
+  "kind": "function",
+  "entrypoint": "length_of_longest_substring",
+  "functionSignature": "def length_of_longest_substring(s: str) -> int",
+  "starterCode": "def length_of_longest_substring(s: str) -> int:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

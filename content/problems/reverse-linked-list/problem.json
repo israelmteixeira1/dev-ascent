@@ -1,0 +1,20 @@
+{
+  "slug": "reverse-linked-list",
+  "title": "Reverse Linked List",
+  "leetcodeUrl": "https://leetcode.com/problems/reverse-linked-list/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "linked-list",
+  "difficulty": "easy",
+  "priority": 2,
+  "order": 7,
+  "summary": "Reverse a singly linked list and return the new head.",
+  "kind": "function",
+  "entrypoint": "reverse_list",
+  "functionSignature": "def reverse_list(head: Optional[ListNode]) -> Optional[ListNode]",
+  "starterCode": "from typing import Optional\n\n# ListNode is provided by the judge:\n# class ListNode:\n#     def __init__(self, val=0, next=None): ...\n\ndef reverse_list(head: Optional[ListNode]) -> Optional[ListNode]:\n    pass\n",
+  "argTypes": ["linked-list"],
+  "returnType": "linked-list",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

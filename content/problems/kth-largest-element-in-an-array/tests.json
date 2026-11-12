@@ -1,0 +1,46 @@
+{
+  "visible": [
+    {
+      "name": "second largest",
+      "args": [[3, 2, 1, 5, 6, 4], 2],
+      "expected": 5
+    },
+    {
+      "name": "duplicates count",
+      "args": [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4],
+      "expected": 4
+    },
+    {
+      "name": "one element",
+      "args": [[1], 1],
+      "expected": 1
+    }
+  ],
+  "hidden": [
+    {
+      "name": "k is the length",
+      "args": [[2, 1], 2],
+      "expected": 1
+    },
+    {
+      "name": "negative duplicates",
+      "args": [[-1, -1], 2],
+      "expected": -1
+    },
+    {
+      "name": "all equal",
+      "args": [[7, 7, 7, 7], 3],
+      "expected": 7
+    },
+    {
+      "name": "largest with negatives",
+      "args": [[-5, 3, 0, -2], 1],
+      "expected": 3
+    },
+    {
+      "name": "smallest of a sorted array",
+      "args": [[5, 4, 3, 2, 1], 5],
+      "expected": 1
+    }
+  ]
+}

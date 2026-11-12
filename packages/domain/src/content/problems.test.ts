@@ -56,6 +56,21 @@ describe('problemSchema', () => {
     expect(parse({ ...problem, comparator: 'unordered', floatTolerance: 1e-6 }).success).toBe(false);
   });
 
+  it('passes values as JSON unless the problem says otherwise', () => {
+    const parsed = problemSchema.parse(problem);
+    expect(parsed.argTypes).toBeUndefined();
+    expect(parsed.returnType).toBe('json');
+    expect(parse({ ...problem, argTypes: ['linked-lists'], returnType: 'linked-list' }).success).toBe(true);
+    expect(parse({ ...problem, argTypes: ['graph'] }).success).toBe(false);
+  });
+
+  it('keeps design problems to JSON values', () => {
+    const design = { ...problem, kind: 'operations', entrypoint: 'LRUCache' };
+    expect(parse(design).success).toBe(true);
+    expect(parse({ ...design, returnType: 'tree' }).success).toBe(false);
+    expect(parse({ ...design, argTypes: ['json'] }).success).toBe(false);
+  });
+
   it('rejects a time limit that is not positive', () => {
     expect(parse({ ...problem, timeLimitS: 0 }).success).toBe(false);
   });

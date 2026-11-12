@@ -1,0 +1,52 @@
+{
+  "visible": [
+    {
+      "name": "two triplets",
+      "args": [[-1, 0, 1, 2, -1, -4]],
+      "expected": [
+        [-1, -1, 2],
+        [-1, 0, 1]
+      ]
+    },
+    {
+      "name": "no triplet",
+      "args": [[0, 1, 1]],
+      "expected": []
+    },
+    {
+      "name": "all zeros",
+      "args": [[0, 0, 0]],
+      "expected": [[0, 0, 0]]
+    }
+  ],
+  "hidden": [
+    {
+      "name": "more zeros than needed",
+      "args": [[0, 0, 0, 0]],
+      "expected": [[0, 0, 0]]
+    },
+    {
+      "name": "two triplets sharing a value",
+      "args": [[-2, 0, 1, 1, 2]],
+      "expected": [
+        [-2, 0, 2],
+        [-2, 1, 1]
+      ]
+    },
+    {
+      "name": "no triplet with negatives",
+      "args": [[1, 2, -2, -1]],
+      "expected": []
+    },
+    {
+      "name": "a duplicate zero",
+      "args": [[-1, 0, 1, 0]],
+      "expected": [[-1, 0, 1]]
+    },
+    {
+      "name": "none adds to zero",
+      "args": [[3, -2, 1, 0]],
+      "expected": []
+    }
+  ]
+}

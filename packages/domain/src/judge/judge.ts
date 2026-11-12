@@ -69,14 +69,31 @@ function deepEqual(a: unknown, b: unknown, tolerance: number | null): boolean {
   return a === b;
 }
 
+/** Every list, at every depth, sorted: two values equal under this are the same up to order. */
+function sortedDeep(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value
+      .map(sortedDeep)
+      .map((item) => [canonical(item), item] as const)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([, item]) => item);
+  }
+  return value;
+}
+
 /**
  * Whether the code's answer matches the expected one.
  * - equals: the same JSON value.
  * - unordered: the same items in any order, at the top level only (inner lists keep their order).
+ * - unordered-deep: the same items in any order, inside nested lists too (3Sum, Group Anagrams).
  * - float: the same shape, numbers within `tolerance` of each other.
  */
 export function answerMatches(comparator: Comparator, expected: unknown, actual: unknown, tolerance?: number): boolean {
   switch (comparator) {
+    case 'unordered-deep':
+      return (
+        Array.isArray(expected) && Array.isArray(actual) && deepEqual(sortedDeep(expected), sortedDeep(actual), null)
+      );
     case 'equals':
       return deepEqual(expected, actual, null);
     case 'float':

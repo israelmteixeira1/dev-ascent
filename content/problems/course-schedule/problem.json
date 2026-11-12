@@ -1,0 +1,18 @@
+{
+  "slug": "course-schedule",
+  "title": "Course Schedule",
+  "leetcodeUrl": "https://leetcode.com/problems/course-schedule/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "topological-sort",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 9,
+  "summary": "Tell whether every course can be taken given pairs [course, prerequisite].",
+  "kind": "function",
+  "entrypoint": "can_finish",
+  "functionSignature": "def can_finish(num_courses: int, prerequisites: list[list[int]]) -> bool",
+  "starterCode": "def can_finish(num_courses: int, prerequisites: list[list[int]]) -> bool:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

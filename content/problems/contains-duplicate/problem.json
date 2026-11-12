@@ -1,0 +1,18 @@
+{
+  "slug": "contains-duplicate",
+  "title": "Contains Duplicate",
+  "leetcodeUrl": "https://leetcode.com/problems/contains-duplicate/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "hash-set",
+  "difficulty": "easy",
+  "priority": 1,
+  "order": 2,
+  "summary": "Tell whether any value appears at least twice in the array.",
+  "kind": "function",
+  "entrypoint": "contains_duplicate",
+  "functionSignature": "def contains_duplicate(nums: list[int]) -> bool",
+  "starterCode": "def contains_duplicate(nums: list[int]) -> bool:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

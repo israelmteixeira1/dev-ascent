@@ -1,0 +1,18 @@
+{
+  "slug": "search-in-rotated-sorted-array",
+  "title": "Search in Rotated Sorted Array",
+  "leetcodeUrl": "https://leetcode.com/problems/search-in-rotated-sorted-array/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "binary-search",
+  "difficulty": "medium",
+  "priority": 2,
+  "order": 6,
+  "summary": "Find the index of a target in a sorted array that was rotated, in O(log n), or -1.",
+  "kind": "function",
+  "entrypoint": "search",
+  "functionSignature": "def search(nums: list[int], target: int) -> int",
+  "starterCode": "def search(nums: list[int], target: int) -> int:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

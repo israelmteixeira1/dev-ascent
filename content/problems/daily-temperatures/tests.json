@@ -1,0 +1,46 @@
+{
+  "visible": [
+    {
+      "name": "mixed week",
+      "args": [[73, 74, 75, 71, 69, 72, 76, 73]],
+      "expected": [1, 1, 4, 2, 1, 1, 0, 0]
+    },
+    {
+      "name": "always warmer",
+      "args": [[30, 40, 50, 60]],
+      "expected": [1, 1, 1, 0]
+    },
+    {
+      "name": "three days",
+      "args": [[30, 60, 90]],
+      "expected": [1, 1, 0]
+    }
+  ],
+  "hidden": [
+    {
+      "name": "one day",
+      "args": [[50]],
+      "expected": [0]
+    },
+    {
+      "name": "equal is not warmer",
+      "args": [[70, 70, 70]],
+      "expected": [0, 0, 0]
+    },
+    {
+      "name": "always colder",
+      "args": [[90, 80, 70]],
+      "expected": [0, 0, 0]
+    },
+    {
+      "name": "alternating",
+      "args": [[30, 31, 30, 31]],
+      "expected": [1, 0, 1, 0]
+    },
+    {
+      "name": "longer wait",
+      "args": [[55, 38, 53, 81, 61, 93, 97, 32, 43, 78]],
+      "expected": [3, 1, 1, 2, 1, 1, 0, 1, 1, 0]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "visible": [
+    {
+      "name": "evicts the least recently used key",
+      "ops": [
+        {
+          "method": "LRUCache",
+          "args": [2]
+        },
+        {
+          "method": "put",
+          "args": [1, 1]
+        },
+        {
+          "method": "put",
+          "args": [2, 2]
+        },
+        {
+          "method": "get",
+          "args": [1]
+        },
+        {
+          "method": "put",
+          "args": [3, 3]
+        },
+        {
+          "method": "get",
+          "args": [2]
+        },
+        {
+          "method": "put",
+          "args": [4, 4]
+        },
+        {
+          "method": "get",
+          "args": [1]
+        },
+        {
+          "method": "get",
+          "args": [3]
+        },
+        {
+          "method": "get",
+          "args": [4]
+        }
+      ],
+      "expected": [null, null, null, 1, null, -1, null, -1, 3, 4]
+    },
+    {
+      "name": "capacity of one",
+      "ops": [
+        {
+          "method": "LRUCache",
+          "args": [1]
+        },
+        {
+          "method": "put",
+          "args": [2, 1]
+        },
+        {
+          "method": "get",
+          "args": [2]
+        },
+        {
+          "method": "put",
+          "args": [3, 2]
+        },
+        {
+          "method": "get",
+          "args": [2]
+        },
+        {
+          "method": "get",
+          "args": [3]
+        }
+      ],
+      "expected": [null, null, 1, null, -1, 2]
+    }
+  ],
+  "hidden": [
+    {
+      "name": "updating a key makes it recent",
+      "ops": [
+        {
+          "method": "LRUCache",
+          "args": [2]
+        },
+        {
+          "method": "put",
+          "args": [1, 1]
+        },
+        {
+          "method": "put",
+          "args": [2, 2]
+        },
+        {
+          "method": "put",
+          "args": [1, 10]
+        },
+        {
+          "method": "put",
+          "args": [3, 3]
+        },
+        {
+          "method": "get",
+          "args": [1]
+        },
+        {
+          "method": "get",
+          "args": [2]
+        },
+        {
+          "method": "get",
+          "args": [3]
+        }
+      ],
+      "expected": [null, null, null, null, null, 10, -1, 3]
+    },
+    {
+      "name": "reading a key makes it recent",
+      "ops": [
+        {
+          "method": "LRUCache",
+          "args": [2]
+        },
+        {
+          "method": "put",
+          "args": [1, 1]
+        },
+        {
+          "method": "put",
+          "args": [2, 2]
+        },
+        {
+          "method": "get",
+          "args": [1]
+        },
+        {
+          "method": "put",
+          "args": [3, 3]
+        },
+        {
+          "method": "get",
+          "args": [2]
+        },
+        {
+          "method": "get",
+          "args": [1]
+        }
+      ],
+      "expected": [null, null, null, 1, null, -1, 1]
+    },
+    {
+      "name": "reading an empty cache",
+      "ops": [
+        {
+          "method": "LRUCache",
+          "args": [2]
+        },
+        {
+          "method": "get",
+          "args": [1]
+        }
+      ],
+      "expected": [null, -1]
+    }
+  ]
+}

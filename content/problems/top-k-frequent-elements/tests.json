@@ -1,0 +1,41 @@
+{
+  "visible": [
+    {
+      "name": "two most frequent",
+      "args": [[1, 1, 1, 2, 2, 3], 2],
+      "expected": [1, 2]
+    },
+    {
+      "name": "one element",
+      "args": [[1], 1],
+      "expected": [1]
+    },
+    {
+      "name": "negative values",
+      "args": [[4, 4, -1, -1, -1, 2], 2],
+      "expected": [-1, 4]
+    }
+  ],
+  "hidden": [
+    {
+      "name": "a single value repeated",
+      "args": [[5, 5, 5, 5], 1],
+      "expected": [5]
+    },
+    {
+      "name": "k equals the number of distinct values",
+      "args": [[1, 2, 3], 3],
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "zero is the most frequent",
+      "args": [[-3, -3, 0, 0, 0, 7], 1],
+      "expected": [0]
+    },
+    {
+      "name": "most frequent not first",
+      "args": [[3, 0, 1, 0], 1],
+      "expected": [0]
+    }
+  ]
+}

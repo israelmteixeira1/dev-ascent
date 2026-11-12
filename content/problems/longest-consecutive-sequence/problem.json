@@ -1,0 +1,18 @@
+{
+  "slug": "longest-consecutive-sequence",
+  "title": "Longest Consecutive Sequence",
+  "leetcodeUrl": "https://leetcode.com/problems/longest-consecutive-sequence/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "hash-set",
+  "difficulty": "medium",
+  "priority": 2,
+  "order": 9,
+  "summary": "Find the length of the longest run of consecutive integers among the values, in O(n).",
+  "kind": "function",
+  "entrypoint": "longest_consecutive",
+  "functionSignature": "def longest_consecutive(nums: list[int]) -> int",
+  "starterCode": "def longest_consecutive(nums: list[int]) -> int:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}

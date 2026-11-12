@@ -14,9 +14,21 @@ export type ProblemDifficulty = (typeof PROBLEM_DIFFICULTIES)[number];
 export const PROBLEM_KINDS = ['function', 'operations'] as const;
 export type ProblemKind = (typeof PROBLEM_KINDS)[number];
 
-/** How a case compares the answer: exact equality, same items in any order, or floats within a tolerance. */
-export const COMPARATORS = ['equals', 'unordered', 'float'] as const;
+/**
+ * How a case compares the answer: exact equality, the same items in any order (`unordered` at the
+ * top level, `unordered-deep` in every nested list too), or floats within a tolerance.
+ */
+export const COMPARATORS = ['equals', 'unordered', 'unordered-deep', 'float'] as const;
 export type Comparator = (typeof COMPARATORS)[number];
+
+/**
+ * How a value crosses between the JSON in tests.json and Python: as is, or turned into LeetCode's
+ * ListNode / TreeNode. A linked list is written as a list of values, a tree in level order with nulls.
+ */
+export const ARG_TYPES = ['json', 'linked-list', 'linked-lists', 'tree'] as const;
+export type ArgType = (typeof ARG_TYPES)[number];
+export const RETURN_TYPES = ['json', 'linked-list', 'tree'] as const;
+export type ReturnType = (typeof RETURN_TYPES)[number];
 
 /** 1 is the list to work through now, 2 the backlog. `order` sorts within a priority. */
 const prioritySchema = z.union([z.literal(1), z.literal(2)]);
@@ -50,6 +62,9 @@ export const problemSchema = z
     starterCode: z.string().min(1),
     comparator: z.enum(COMPARATORS).default('equals'),
     floatTolerance: z.number().positive().optional(),
+    /** One per argument of a function problem; all `json` when absent. */
+    argTypes: z.array(z.enum(ARG_TYPES)).optional(),
+    returnType: z.enum(RETURN_TYPES).default('json'),
     timeLimitS: z.number().positive(),
     status: contentStatusSchema,
     /** False until the author checks the cases against the official statement. The UI says so. */
@@ -65,6 +80,13 @@ export const problemSchema = z
         code: 'custom',
         path: ['floatTolerance'],
         message: `The ${problem.comparator} comparator ignores a tolerance.`,
+      });
+    }
+    if (problem.kind === 'operations' && (problem.argTypes !== undefined || problem.returnType !== 'json')) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['argTypes'],
+        message: 'Design problems take and return JSON values only.',
       });
     }
   });

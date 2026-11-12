@@ -1,0 +1,18 @@
+{
+  "slug": "kth-largest-element-in-an-array",
+  "title": "Kth Largest Element in an Array",
+  "leetcodeUrl": "https://leetcode.com/problems/kth-largest-element-in-an-array/",
+  "tracks": ["telnyx-ai-fde"],
+  "pattern": "heap",
+  "difficulty": "medium",
+  "priority": 1,
+  "order": 8,
+  "summary": "Return the k-th largest value, counting duplicates, without fully sorting if you can.",
+  "kind": "function",
+  "entrypoint": "find_kth_largest",
+  "functionSignature": "def find_kth_largest(nums: list[int], k: int) -> int",
+  "starterCode": "def find_kth_largest(nums: list[int], k: int) -> int:\n    pass\n",
+  "timeLimitS": 2,
+  "status": "draft",
+  "verifiedAgainstLeetCode": false
+}
