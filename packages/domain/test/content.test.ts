@@ -68,7 +68,26 @@ describe('tracks', () => {
 const deckFiles = list('flashcards');
 
 describe('flashcards', () => {
-  it('has at least one deck', () => expect(deckFiles.length).toBeGreaterThan(0));
+  it('has the seed decks', () =>
+    expect([...deckFiles].sort()).toEqual(
+      ['agent-safety', 'agents', 'behavioral', 'complexity', 'hash-maps', 'llm-production', 'rag', 'system-design'].map(
+        (deck) => `${deck}.json`,
+      ),
+    ));
+
+  it.each(deckFiles.filter((file) => file !== 'behavioral.json'))(
+    '%s is general knowledge, shared by every track',
+    (file) => {
+      const deck = deckFileSchema.parse(readJson(path.join(root, 'flashcards', file)));
+      deck.cards.forEach((c) => expect(c.tracks).toEqual(['general']));
+    },
+  );
+
+  it('keeps company-specific cards on the company track only', () => {
+    const deck = deckFileSchema.parse(readJson(path.join(root, 'flashcards', 'behavioral.json')));
+    const whyTelnyx = deck.cards.find((c) => c.slug === 'why-telnyx');
+    expect(whyTelnyx?.tracks).toEqual(['telnyx-ai-fde']);
+  });
 
   it.each(deckFiles)('%s is a JSON deck named after its file', (file) => {
     const deck = deckFileSchema.parse(readJson(path.join(root, 'flashcards', file)));

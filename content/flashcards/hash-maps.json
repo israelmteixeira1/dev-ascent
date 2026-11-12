@@ -29,6 +29,83 @@
         "Java HashMap chains; CPython dict uses open addressing"
       ],
       "status": "draft"
+    },
+    {
+      "slug": "load-factor-and-resize",
+      "tracks": ["general"],
+      "tags": ["data-structures", "hash-map", "amortized-analysis"],
+      "type": "explain-out-loud",
+      "question": "What is the load factor, and why is a resize still amortized O(1) per insert?",
+      "answer": "The load factor is the number of entries divided by the number of buckets. When it crosses a threshold (0.75 by default in Java's HashMap; CPython's dict resizes at about two-thirds full), the table allocates a larger array, usually double the size, and rehashes every entry into it. That single resize costs O(n), but because the capacity doubles, it happens only after n more inserts, so the cost spread over those inserts is constant. This is the same argument as a dynamic array that doubles when full.",
+      "keyPoints": [
+        "Load factor = entries / buckets",
+        "Crossing the threshold triggers a resize, usually doubling",
+        "One O(n) rehash paid for by n cheap inserts → amortized O(1)",
+        "Same argument as a doubling dynamic array"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "worst-case-and-treeify",
+      "tracks": ["general"],
+      "tags": ["data-structures", "hash-map", "java"],
+      "type": "concept",
+      "question": "When does a hash map degrade to O(n), and how does Java 8+ limit the damage?",
+      "answer": "If many keys collide into the same bucket — a poor hash function, or an attacker choosing keys on purpose — every lookup in that bucket becomes a linear scan, so operations degrade to O(n). Since Java 8, HashMap converts a bucket from a linked list into a red-black tree once it holds 8 entries and the table has at least 64 buckets, which bounds the worst case at O(log n) for keys that are Comparable. Below 64 buckets it prefers to resize instead, and a tree shrinks back into a list at 6 entries. Python and other runtimes defend against hash flooding differently, by randomizing the hash of strings per process.",
+      "keyPoints": [
+        "Many collisions in one bucket → O(n) scan",
+        "Java 8+: bucket becomes a red-black tree at 8 entries (table ≥ 64 buckets)",
+        "Worst case becomes O(log n)",
+        "Python randomizes string hashes against hash flooding"
+      ],
+      "source": "OpenJDK java.util.HashMap (TREEIFY_THRESHOLD, UNTREEIFY_THRESHOLD, MIN_TREEIFY_CAPACITY)",
+      "status": "draft"
+    },
+    {
+      "slug": "equals-hashcode-contract",
+      "tracks": ["general"],
+      "tags": ["data-structures", "hash-map", "java"],
+      "type": "concept",
+      "question": "What is the equals/hashCode contract, and what breaks if you violate it?",
+      "answer": "If two objects are equal according to equals, they must return the same hashCode; the reverse is not required, since different objects may share a hash. A hash map first uses the hash to pick the bucket and only then calls equals, so overriding equals without hashCode makes equal keys land in different buckets and lookups silently miss. A key must also not change its hash while it is stored, which is why mutable fields make poor keys. Python has the same rule for __eq__ and __hash__, and defining __eq__ alone makes a class unhashable.",
+      "keyPoints": [
+        "a.equals(b) ⇒ a.hashCode() == b.hashCode()",
+        "Equal hashes do not imply equal objects",
+        "Override both or lookups miss silently",
+        "Never mutate a stored key's hashed fields",
+        "Python: __eq__ without __hash__ makes the class unhashable"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "python-dict",
+      "tracks": ["general"],
+      "tags": ["data-structures", "hash-map", "python"],
+      "type": "concept",
+      "question": "How is CPython's dict implemented, and what can be a key?",
+      "answer": "CPython's dict uses open addressing with a pseudo-random probe sequence driven by the hash bits, not plain linear probing. Since Python 3.6 it is a compact dict: a small sparse table of indices points into a dense array of entries kept in insertion order, which saves memory and makes iteration fast; preserving insertion order became a language guarantee in Python 3.7. Keys must be hashable, meaning they define __hash__ and __eq__ consistently and their hash never changes, so lists and dicts cannot be keys while tuples of hashable values can.",
+      "keyPoints": [
+        "Open addressing with perturbed probing",
+        "Compact layout: sparse index table + dense entry array",
+        "Insertion order guaranteed since 3.7",
+        "Keys must be hashable: lists no, tuples of hashables yes"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "array-vs-list",
+      "tracks": ["general"],
+      "tags": ["data-structures", "arrays", "python"],
+      "type": "concept",
+      "question": "What is the difference between a fixed array, a dynamic array and a linked list?",
+      "answer": "A fixed array is one contiguous block of memory with a set size: indexing is O(1) and cache-friendly, but it cannot grow. A dynamic array, such as Python's list or Java's ArrayList, wraps an array and reallocates to a larger one when full, so append is amortized O(1) while inserting or deleting at the front or middle is O(n) because elements shift. A linked list inserts or removes in O(1) once you hold the node, but indexing is O(n) and it scatters nodes across memory, so in practice it is often slower than a dynamic array. Python's list is a dynamic array of references, not a linked list.",
+      "keyPoints": [
+        "Array: contiguous, O(1) index, fixed size",
+        "Dynamic array: amortized O(1) append, O(n) insert at front",
+        "Linked list: O(1) splice at a known node, O(n) index, poor cache locality",
+        "Python list = dynamic array of references"
+      ],
+      "status": "draft"
     }
   ]
 }

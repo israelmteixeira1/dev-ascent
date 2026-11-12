@@ -1,0 +1,81 @@
+{
+  "deck": "complexity",
+  "cards": [
+    {
+      "slug": "array",
+      "tracks": ["general"],
+      "tags": ["big-o", "arrays"],
+      "type": "concept",
+      "question": "What is the Big-O of the main operations on a dynamic array (Python list)?",
+      "answer": "Indexing and assigning by position are O(1). Appending at the end is amortized O(1), and popping from the end is O(1). Inserting or deleting at the front or in the middle is O(n), because every later element shifts. Searching for a value with `in` or index() is O(n), and slicing costs O(k) for a slice of length k.",
+      "keyPoints": [
+        "Index / assign: O(1)",
+        "Append / pop from the end: amortized O(1)",
+        "Insert / delete at front or middle: O(n)",
+        "Search by value: O(n); slice: O(k)"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "hash-map",
+      "tracks": ["general"],
+      "tags": ["big-o", "hash-map"],
+      "type": "concept",
+      "question": "What is the Big-O of a hash map (dict) and a hash set?",
+      "answer": "Insert, lookup and delete are O(1) on average and O(n) in the worst case, when many keys collide. Iterating over all entries is O(n). Building a map from n items is O(n) on average. A hash set has the same costs, which is why converting a list to a set turns repeated O(n) membership checks into O(1) ones.",
+      "keyPoints": [
+        "Insert / lookup / delete: O(1) average, O(n) worst",
+        "Iteration: O(n)",
+        "Set membership beats list membership: O(1) vs O(n)"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "heap",
+      "tracks": ["general"],
+      "tags": ["big-o", "heap"],
+      "type": "concept",
+      "question": "What is the Big-O of a binary heap, and when do you reach for one?",
+      "answer": "Reading the minimum (or maximum) is O(1), while push and pop are O(log n) because the element sifts up or down one level at a time. Building a heap from n items with heapify is O(n), not O(n log n). Searching for an arbitrary value is O(n), since a heap is only partially ordered. Heaps fit top-k, k-way merge and scheduling problems; keeping a size-k heap gives top-k in O(n log k). In Python, heapq is a min-heap, so a max-heap is usually simulated by pushing negated values.",
+      "keyPoints": [
+        "Peek: O(1); push / pop: O(log n)",
+        "heapify: O(n)",
+        "Arbitrary search: O(n)",
+        "Top-k with a size-k heap: O(n log k)",
+        "Python heapq is a min-heap"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "balanced-bst",
+      "tracks": ["general"],
+      "tags": ["big-o", "trees"],
+      "type": "concept",
+      "question": "What is the Big-O of a balanced binary search tree, and what does it give you that a hash map does not?",
+      "answer": "A balanced BST, such as a red-black or AVL tree, keeps its height at O(log n), so insert, delete and search are O(log n) in the worst case. An unbalanced BST can degrade into a linked list with O(n) operations. Compared with a hash map, it keeps keys sorted, so it supports in-order iteration in O(n), min and max, floor and ceiling, and range queries in O(log n + k). Java's TreeMap is a red-black tree; Python's standard library has no balanced BST, so people use bisect on a sorted list or the third-party sortedcontainers package.",
+      "keyPoints": [
+        "Insert / delete / search: O(log n) worst case",
+        "Unbalanced BST can degrade to O(n)",
+        "Sorted order: range queries, floor/ceiling, min/max",
+        "Java TreeMap; Python has none built in"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "sorting",
+      "tracks": ["general"],
+      "tags": ["big-o", "sorting"],
+      "type": "explain-out-loud",
+      "question": "What are the time complexities of the common sorting algorithms, and which one does Python use?",
+      "answer": "Any comparison sort needs Ω(n log n) comparisons in the worst case. Merge sort is O(n log n) in every case, stable, and uses O(n) extra space. Quicksort is O(n log n) on average but O(n²) in the worst case, and it sorts in place. Heapsort is O(n log n) in place but not stable. Python's sorted() and list.sort() use Timsort, a stable hybrid of merge sort and insertion sort that is O(n log n) in the worst case and O(n) on input that is already sorted. Counting and radix sort beat n log n, in O(n + k), when the keys are small integers.",
+      "keyPoints": [
+        "Comparison sort lower bound: Ω(n log n)",
+        "Merge: O(n log n), stable, O(n) space",
+        "Quick: O(n log n) average, O(n²) worst, in place",
+        "Python: Timsort, stable, O(n) on sorted input",
+        "Counting / radix: O(n + k) for small integer keys"
+      ],
+      "status": "draft"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "deck": "agents",
+  "cards": [
+    {
+      "slug": "agent-vs-chatbot",
+      "tracks": ["general"],
+      "tags": ["ai", "agents"],
+      "type": "explain-out-loud",
+      "question": "What is the difference between an agent and a chatbot?",
+      "answer": "A chatbot answers one message at a time: the model produces text and a human decides what to do with it. An agent runs a loop in which the model chooses actions — calling tools, reading the results and deciding the next step — until it reaches a goal or a stopping condition, with little or no human input between steps. That autonomy is what makes agents useful for multi-step work and also what makes them risky, because mistakes compound and actions have side effects. In practice many good systems are workflows, with fixed steps that call a model, and only become agents where the path genuinely cannot be decided in advance.",
+      "keyPoints": [
+        "Chatbot: one turn of text, human acts",
+        "Agent: model-driven loop of tool calls toward a goal",
+        "Autonomy brings both usefulness and compounding risk",
+        "Prefer a fixed workflow when the steps are known"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "tool-calling-loop",
+      "tracks": ["general"],
+      "tags": ["ai", "agents", "tool-use"],
+      "type": "explain-out-loud",
+      "question": "How does the tool-calling loop work, and what role does stop_reason play?",
+      "answer": "You send the model the conversation plus the tools it may use, each with a name, a description and a JSON schema for its input. When the model wants a tool, the response stops with stop_reason set to tool_use and contains a tool-use block with the tool name and arguments; your code runs the tool and sends the result back as a tool-result message, and the loop repeats. When the model is done it stops with end_turn, and you return its answer. Other stop reasons need handling too: max_tokens means the output was cut off, and stop_sequence means a configured stop string was hit. A production loop also caps iterations and total cost so it cannot run forever. These names are from Anthropic's Messages API; OpenAI exposes the same idea as finish_reason.",
+      "keyPoints": [
+        "Send messages + tool definitions (name, description, JSON schema)",
+        "stop_reason = tool_use → run the tool, send a tool_result, loop",
+        "end_turn → done; max_tokens → truncated; stop_sequence → stop string hit",
+        "Cap iterations and spend",
+        "OpenAI calls it finish_reason"
+      ],
+      "source": "Anthropic Messages API documentation (stop_reason). Newer API versions add other values such as pause_turn and refusal; check the current docs.",
+      "status": "draft"
+    },
+    {
+      "slug": "tool-design",
+      "tracks": ["general"],
+      "tags": ["ai", "agents", "tool-use"],
+      "type": "concept",
+      "question": "What makes a tool well designed for an agent?",
+      "answer": "The model only sees the name, the description and the input schema, so those are the interface: describe what the tool does, when to use it and when not to, as you would to a new colleague. Prefer a few tools that match real tasks, such as schedule_meeting, over thin wrappers around every API endpoint, so the agent needs fewer steps and makes fewer mistakes. Return concise, meaningful results — names instead of opaque IDs, paginated or truncated output — because everything returned consumes context. Make errors actionable, telling the model what went wrong and how to fix the call, and make tools idempotent or clearly flag side effects. Test the tools by watching the agent use them and iterate on the descriptions.",
+      "keyPoints": [
+        "Name, description and schema are the whole interface",
+        "Task-level tools beat one tool per endpoint",
+        "Concise, readable results; output costs context",
+        "Actionable error messages",
+        "Iterate by watching real agent runs"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "mcp",
+      "tracks": ["general"],
+      "tags": ["ai", "agents", "mcp"],
+      "type": "concept",
+      "question": "What is the Model Context Protocol (MCP), and what are its main parts?",
+      "answer": "MCP is an open protocol, introduced by Anthropic, that standardizes how AI applications connect to external tools and data, so one integration works with any compatible client instead of being rebuilt per app. A host application runs MCP clients, each connected to one MCP server, and they speak JSON-RPC. Servers expose three primitives: tools, which the model can call; resources, which are data the application can read into context; and prompts, which are reusable templates the user can pick. The main transports are stdio, for a local server launched as a subprocess, and Streamable HTTP for remote servers, which replaced the earlier HTTP with Server-Sent Events transport. Clients can also offer features to servers, such as sampling, which lets a server request a completion from the client's model.",
+      "keyPoints": [
+        "Open standard for connecting AI apps to tools and data",
+        "Host → clients → servers, over JSON-RPC",
+        "Server primitives: tools, resources, prompts",
+        "Transports: stdio (local) and Streamable HTTP (remote)",
+        "Client features such as sampling"
+      ],
+      "source": "modelcontextprotocol.io specification. The transport list reflects the 2025 spec revisions; check the current version.",
+      "status": "draft"
+    },
+    {
+      "slug": "orchestration-patterns",
+      "tracks": ["general"],
+      "tags": ["ai", "agents", "architecture"],
+      "type": "explain-out-loud",
+      "question": "What are common orchestration patterns for LLM systems and agents?",
+      "answer": "Prompt chaining splits a task into fixed steps, each feeding the next, with checks between them. Routing classifies the input and sends it to a specialized prompt or model. Parallelization runs independent subtasks at once, or runs the same task several times and votes. Orchestrator-workers has a central model break the task down at runtime and delegate pieces to worker models. Evaluator-optimizer has one model produce an answer while another critiques it in a loop. Start with the simplest pattern that works and add autonomy only when it measurably helps, because every extra model call adds latency, cost and failure modes.",
+      "keyPoints": [
+        "Prompt chaining",
+        "Routing",
+        "Parallelization: sectioning or voting",
+        "Orchestrator-workers",
+        "Evaluator-optimizer",
+        "Simplest pattern first; autonomy only when it pays"
+      ],
+      "source": "Anthropic, \"Building effective agents\" (2024)",
+      "status": "draft"
+    }
+  ]
+}

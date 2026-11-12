@@ -1,0 +1,194 @@
+{
+  "deck": "system-design",
+  "cards": [
+    {
+      "slug": "horizontal-scaling",
+      "tracks": ["general"],
+      "tags": ["system-design", "scalability"],
+      "type": "concept",
+      "question": "What is the difference between vertical and horizontal scaling, and what does horizontal scaling require?",
+      "answer": "Vertical scaling means a bigger machine: it is simple but has a ceiling, gets expensive and leaves a single point of failure. Horizontal scaling adds more machines behind a load balancer, which removes the ceiling and adds redundancy. It requires stateless application servers, with session and other state moved to a shared store such as a database or cache, so any instance can serve any request. The stateful tier — the database — is the hard part, scaled with read replicas, caching and eventually sharding.",
+      "keyPoints": [
+        "Vertical: bigger box, simple, has a ceiling",
+        "Horizontal: more boxes, no ceiling, redundancy",
+        "App servers must be stateless",
+        "The database is the hard part to scale out"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "load-balancing",
+      "tracks": ["general"],
+      "tags": ["system-design", "scalability"],
+      "type": "concept",
+      "question": "How does a load balancer work, and what are the common algorithms?",
+      "answer": "A load balancer spreads incoming requests across healthy backend instances and removes unhealthy ones using health checks. A layer 4 balancer routes by IP and port, which is fast; a layer 7 balancer understands HTTP, so it can route by path or header and terminate TLS. Common algorithms are round robin, least connections, which helps when request costs vary, and consistent hashing, which sends the same key to the same backend for cache affinity. The balancer itself must be redundant, for example as an active-passive pair or a managed cloud service.",
+      "keyPoints": [
+        "Spreads load; health checks drop bad instances",
+        "L4 (IP/port, fast) vs L7 (HTTP-aware, TLS termination)",
+        "Round robin, least connections, consistent hashing",
+        "The balancer must not be a single point of failure"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "caching",
+      "tracks": ["general"],
+      "tags": ["system-design", "caching"],
+      "type": "explain-out-loud",
+      "question": "How do you use a cache, and what are the main pitfalls?",
+      "answer": "A cache keeps hot data in fast memory, such as Redis, to cut latency and database load. The most common pattern is cache-aside: read from the cache, and on a miss read the database and fill the cache with a TTL; writes update the database and invalidate the key. Write-through updates the cache on every write, and write-back delays the database write, which is faster but risks losing data. The pitfalls are stale data, since invalidation is hard, stampedes when a hot key expires and many requests hit the database at once, and eviction under memory pressure, usually with LRU. Request coalescing, jittered TTLs and early refresh soften stampedes.",
+      "keyPoints": [
+        "Cache-aside: read through on miss, invalidate on write",
+        "Write-through vs write-back",
+        "Pitfalls: stale data, stampedes, eviction",
+        "Coalesce requests and jitter TTLs"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "sql-vs-nosql",
+      "tracks": ["general"],
+      "tags": ["system-design", "databases"],
+      "type": "concept",
+      "question": "When would you choose SQL and when NoSQL?",
+      "answer": "A relational database gives you a schema, joins, ACID transactions and flexible queries, which fits most business data and should be the default. NoSQL stores trade some of that for a specific strength: key-value stores for very fast lookups by key, document stores for flexible nested records, wide-column stores such as Cassandra for very high write throughput across many nodes, and graph databases for relationship-heavy queries. Choose NoSQL when the access pattern is simple and known in advance and the scale or write volume outgrows a single relational primary. Modern relational databases also handle JSON and scale far with replicas, so the decision is about access patterns and consistency needs, not fashion.",
+      "keyPoints": [
+        "SQL: schema, joins, ACID, flexible queries — the default",
+        "Key-value, document, wide-column, graph each have one strength",
+        "NoSQL fits simple, known access patterns at large scale",
+        "Decide by access pattern and consistency needs"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "replication",
+      "tracks": ["general"],
+      "tags": ["system-design", "databases", "reliability"],
+      "type": "concept",
+      "question": "What is database replication, and what trade-offs does it bring?",
+      "answer": "Replication keeps copies of the data on several nodes, for availability and to spread reads. In leader-follower replication all writes go to the leader and stream to followers, which serve reads. Synchronous replication waits for a follower to confirm, so no acknowledged write is lost but writes are slower; asynchronous replication is faster but followers lag, so a read can return stale data and a failover can lose recent writes. Leader election on failure must avoid split brain, where two nodes both accept writes. Reading your own writes from the leader, or from a replica that has caught up, avoids confusing users with lag.",
+      "keyPoints": [
+        "Copies for availability and read scaling",
+        "Leader takes writes; followers serve reads",
+        "Sync: durable but slower; async: fast but lagging",
+        "Failover risks lost writes and split brain",
+        "Read-your-writes to hide lag"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "sharding",
+      "tracks": ["general"],
+      "tags": ["system-design", "databases", "scalability"],
+      "type": "concept",
+      "question": "What is sharding, and how do you choose a shard key?",
+      "answer": "Sharding splits data across several databases so that each holds a subset, scaling writes and storage beyond one machine. Range sharding keeps nearby keys together, which helps range scans but can create hot spots; hash sharding spreads load evenly but makes range queries scatter across shards, and consistent hashing reduces the data moved when shards are added. A good shard key has high cardinality, spreads load evenly and keeps most queries on a single shard — often the tenant or user ID. Sharding makes cross-shard joins, transactions and rebalancing hard, so exhaust replicas, caching and vertical scaling first.",
+      "keyPoints": [
+        "Splits data so each node holds a subset",
+        "Range: good scans, hot spots; hash: even load, scattered ranges",
+        "Consistent hashing limits rebalancing",
+        "Key: high cardinality, even load, single-shard queries",
+        "Cross-shard joins and transactions are hard: shard last"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "consistency",
+      "tracks": ["general"],
+      "tags": ["system-design", "distributed-systems"],
+      "type": "explain-out-loud",
+      "question": "Explain strong versus eventual consistency and the CAP theorem.",
+      "answer": "Strong consistency means every read sees the latest acknowledged write, as if there were one copy of the data; eventual consistency means replicas converge if writes stop, but a read may briefly return stale data. CAP says that during a network partition a distributed system must choose between consistency, refusing some requests, and availability, answering with possibly stale data. PACELC adds that even without partitions there is a trade-off between latency and consistency. Many systems pick per operation: strong consistency for balances and inventory, eventual consistency for feeds, counters and caches.",
+      "keyPoints": [
+        "Strong: every read sees the latest write",
+        "Eventual: replicas converge; reads may be stale",
+        "CAP: under partition, choose consistency or availability",
+        "PACELC: otherwise, latency vs consistency",
+        "Choose per operation"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "multi-region",
+      "tracks": ["general"],
+      "tags": ["system-design", "reliability"],
+      "type": "concept",
+      "question": "What changes when a system runs in multiple regions?",
+      "answer": "Multiple regions survive a full region outage and serve users with lower latency, but cross-region round trips cost tens to hundreds of milliseconds. Active-passive keeps a standby region with replicated data and fails over to it, which is simpler but loses whatever had not replicated yet. Active-active serves traffic in every region, which requires handling concurrent writes to the same data, for example by giving each record a home region or using conflict resolution. You also need global routing, by DNS or anycast, data-residency rules and regular failover drills, because an untested failover usually fails.",
+      "keyPoints": [
+        "Survive region outages; lower user latency",
+        "Cross-region calls are slow",
+        "Active-passive: simpler, may lose recent writes",
+        "Active-active: needs write conflict handling or home regions",
+        "Global routing, data residency, failover drills"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "concurrency-models",
+      "tracks": ["general"],
+      "tags": ["system-design", "concurrency", "python"],
+      "type": "explain-out-loud",
+      "question": "Compare threads, processes and async I/O, and explain the GIL.",
+      "answer": "Threads share memory inside one process, which makes communication cheap but requires locks to avoid races. Processes have separate memory, so they are isolated and use multiple cores fully, at the cost of more memory and slower communication. Async I/O runs many tasks on one thread with an event loop that switches at await points, which handles thousands of concurrent network calls cheaply but blocks completely if one task does CPU work. In CPython the Global Interpreter Lock lets only one thread execute Python bytecode at a time, so threads help with I/O-bound work but not with CPU-bound work, which needs processes. Python 3.13 added an experimental free-threaded build without the GIL, and its status is still evolving.",
+      "keyPoints": [
+        "Threads: shared memory, need locks",
+        "Processes: isolated, real parallelism, heavier",
+        "Async: one thread, event loop, great for I/O, blocked by CPU work",
+        "GIL: one thread runs Python bytecode at a time",
+        "I/O-bound → threads or async; CPU-bound → processes",
+        "3.13 has an experimental free-threaded build"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "queues",
+      "tracks": ["general"],
+      "tags": ["system-design", "async-processing", "queues"],
+      "type": "explain-out-loud",
+      "question": "Explain at-least-once delivery, dead-letter queues and backpressure.",
+      "answer": "A queue decouples producers from consumers, absorbs bursts and lets slow work run in the background. Most queues guarantee at-least-once delivery: a message is redelivered if the consumer crashes before acknowledging it, so consumers must be idempotent, for example by recording processed message IDs. Exactly-once is generally achieved as at-least-once delivery plus idempotent processing. A dead-letter queue holds messages that keep failing after a set number of retries, so one poison message does not block the queue and can be inspected later. Backpressure means slowing producers when consumers fall behind — bounded queues, rejecting or throttling input — instead of letting the backlog and latency grow without limit.",
+      "keyPoints": [
+        "Queues decouple and absorb bursts",
+        "At-least-once → idempotent consumers",
+        "Exactly-once ≈ at-least-once + idempotency",
+        "Dead-letter queue isolates poison messages",
+        "Backpressure: bounded queues, throttle producers"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "rate-limiting",
+      "tracks": ["general"],
+      "tags": ["system-design", "reliability", "security"],
+      "type": "concept",
+      "question": "How do you implement rate limiting, and which algorithms exist?",
+      "answer": "Rate limiting caps how many requests a client can make in a period, protecting the service from abuse and overload, and answers HTTP 429 with a retry-after header when exceeded. A token bucket refills tokens at a fixed rate and allows bursts up to the bucket size; a leaky bucket drains requests at a constant rate; a fixed window counts per minute but allows double bursts at window edges, which a sliding window log or sliding window counter fixes. In a distributed system the counters live in a shared store such as Redis, updated atomically, and the key can be the user, the API key, the IP or the endpoint.",
+      "keyPoints": [
+        "Cap requests per client; answer 429 + retry-after",
+        "Token bucket: steady rate with bursts",
+        "Leaky bucket: constant outflow",
+        "Fixed window edge bursts → sliding window",
+        "Shared atomic counters (Redis) across instances"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "observability",
+      "tracks": ["general"],
+      "tags": ["system-design", "observability"],
+      "type": "concept",
+      "question": "What are the pillars of observability, and what would you monitor first?",
+      "answer": "Metrics are cheap numeric time series for dashboards and alerts, logs are detailed records of individual events, and traces follow one request across services as a tree of timed spans. Start with the golden signals for each service — latency, traffic, errors and saturation — and alert on symptoms users feel, tied to service-level objectives, rather than on every internal cause. Use structured logs with a request or trace ID so the three can be correlated, and keep secrets and personal data out of them. OpenTelemetry is the common vendor-neutral standard for emitting all three.",
+      "keyPoints": [
+        "Metrics, logs, traces",
+        "Golden signals: latency, traffic, errors, saturation",
+        "Alert on user-facing symptoms and SLOs",
+        "Correlate with a trace ID; no secrets in logs",
+        "OpenTelemetry as the standard"
+      ],
+      "status": "draft"
+    }
+  ]
+}

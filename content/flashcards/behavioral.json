@@ -1,0 +1,110 @@
+{
+  "deck": "behavioral",
+  "cards": [
+    {
+      "slug": "ninety-second-pitch",
+      "tracks": ["general"],
+      "tags": ["behavioral", "introduction"],
+      "type": "behavioral",
+      "question": "Tell me about yourself. (90-second pitch)",
+      "answer": "",
+      "keyPoints": [
+        "Present: your current role and the problems you own",
+        "Past: one or two achievements with numbers",
+        "Future: why this role is the natural next step",
+        "Stop at 90 seconds"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "production-incident",
+      "tracks": ["general"],
+      "tags": ["behavioral", "ownership", "incident"],
+      "type": "behavioral",
+      "question": "Tell me about a production incident you handled.",
+      "answer": "",
+      "keyPoints": [
+        "Situation: impact on users, scale, severity",
+        "Task: your role in the response",
+        "Action: how you diagnosed, mitigated, then fixed",
+        "Result: time to recover and what changed so it does not repeat"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "ambiguous-problem-to-product",
+      "tracks": ["general"],
+      "tags": ["behavioral", "ambiguity", "product"],
+      "type": "behavioral",
+      "question": "Tell me about a time you turned an ambiguous problem into a shipped product.",
+      "answer": "",
+      "keyPoints": [
+        "Situation: what was unclear, and who wanted what",
+        "Task: what you decided to own",
+        "Action: how you discovered requirements and cut scope",
+        "Result: what shipped, adoption and impact"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "own-mistake",
+      "tracks": ["general"],
+      "tags": ["behavioral", "ownership"],
+      "type": "behavioral",
+      "question": "Tell me about a mistake you found in your own work.",
+      "answer": "",
+      "keyPoints": [
+        "Situation: what the mistake was and how you found it",
+        "Task: the impact and who was affected",
+        "Action: how you owned it, communicated and fixed it",
+        "Result: the safeguard you added afterwards"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "working-with-customers",
+      "tracks": ["general"],
+      "tags": ["behavioral", "customer"],
+      "type": "behavioral",
+      "question": "Tell me about a time you worked directly with a customer.",
+      "answer": "",
+      "keyPoints": [
+        "Situation: the customer and their problem",
+        "Task: what you were responsible for delivering",
+        "Action: how you translated needs into technical work and managed expectations",
+        "Result: outcome for the customer and the relationship"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "disagreement-with-colleague",
+      "tracks": ["general"],
+      "tags": ["behavioral", "collaboration", "conflict"],
+      "type": "behavioral",
+      "question": "Tell me about a disagreement with a colleague and how you resolved it.",
+      "answer": "",
+      "keyPoints": [
+        "Situation: the decision and both positions",
+        "Task: what was at stake",
+        "Action: how you listened, used data and reached a decision",
+        "Result: the outcome and the working relationship afterwards"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "why-telnyx",
+      "tracks": ["telnyx-ai-fde"],
+      "tags": ["behavioral", "motivation", "company"],
+      "type": "behavioral",
+      "question": "Why Telnyx?",
+      "answer": "",
+      "keyPoints": [
+        "What Telnyx builds that interests you, in your own research",
+        "Why the AI Forward Deployed Engineer role specifically",
+        "Which of your experiences map to it",
+        "What you want to learn or build there"
+      ],
+      "status": "draft"
+    }
+  ]
+}

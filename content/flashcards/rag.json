@@ -1,0 +1,113 @@
+{
+  "deck": "rag",
+  "cards": [
+    {
+      "slug": "why-rag",
+      "tracks": ["general"],
+      "tags": ["ai", "rag", "llm"],
+      "type": "explain-out-loud",
+      "question": "Why does retrieval-augmented generation (RAG) exist?",
+      "answer": "A language model only knows what was in its training data: it has a knowledge cutoff, it never saw your private documents, and it can hallucinate confidently when it does not know. RAG retrieves relevant passages from your own data at query time and puts them in the prompt, so the model answers from that context instead of from memory alone. This keeps answers current without retraining, lets you cite sources, and lets you enforce access control at retrieval time. Fine-tuning is better for changing style or behavior; RAG is better for injecting facts that change.",
+      "keyPoints": [
+        "Models have a cutoff and no access to private data",
+        "Retrieve relevant passages, put them in the prompt",
+        "Fresh data without retraining, citations, access control",
+        "RAG for facts; fine-tuning for behavior and style"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "embeddings",
+      "tracks": ["general"],
+      "tags": ["ai", "rag", "embeddings"],
+      "type": "concept",
+      "question": "What is an embedding, and how is it used for search?",
+      "answer": "An embedding model maps a piece of text to a fixed-length vector of numbers so that texts with similar meaning end up close together in that vector space. To search, you embed every document chunk once and store the vectors; at query time you embed the question with the same model and return the chunks whose vectors are nearest, usually by cosine similarity or dot product. This captures paraphrases that keyword search misses, but it can blur exact terms such as product codes or names. The query and the documents must use the same embedding model, so changing models means re-embedding the corpus.",
+      "keyPoints": [
+        "Text → fixed-length vector; similar meaning → nearby vectors",
+        "Search = nearest neighbors by cosine or dot product",
+        "Catches paraphrases, weak on exact identifiers",
+        "Changing the model means re-embedding everything"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "vector-databases",
+      "tracks": ["general"],
+      "tags": ["ai", "rag", "vector-db"],
+      "type": "concept",
+      "question": "Why use a vector database, and what are ANN, HNSW and metadata filtering?",
+      "answer": "Exact nearest-neighbor search compares the query with every vector, which is O(n) per query and too slow at millions of vectors. Approximate nearest neighbor (ANN) indexes trade a little recall for much lower latency. HNSW, a common choice, builds a layered proximity graph and searches it greedily from the sparse top layer down; its parameters (M, efConstruction, efSearch) tune the balance between recall, speed and memory. Metadata filters restrict results to, say, one tenant or a date range: filtering after the vector search can return too few results, so good engines filter during the search. Postgres with pgvector is often enough before reaching for a dedicated vector database.",
+      "keyPoints": [
+        "Exact search is O(n) per query",
+        "ANN trades a little recall for speed",
+        "HNSW: layered graph; M, efConstruction, efSearch tune recall vs speed",
+        "Post-filtering can starve results; filter during search",
+        "pgvector is often enough to start"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "chunking",
+      "tracks": ["general"],
+      "tags": ["ai", "rag"],
+      "type": "concept",
+      "question": "How do you chunk documents for RAG, and what are the trade-offs?",
+      "answer": "Documents are split into chunks small enough to embed precisely and to fit several in the prompt, typically a few hundred tokens, often with some overlap so a sentence cut at the boundary is not lost. Chunks that are too small lose the context needed to answer; chunks that are too large dilute the embedding and waste prompt space. Splitting on the document's structure — headings, paragraphs, code blocks — usually beats fixed-size windows. Storing metadata with each chunk, such as the source, section title and date, enables filtering and citations, and some systems retrieve a small chunk but pass its parent section to the model. There is no universal best size, so chunking should be tuned against an evaluation set.",
+      "keyPoints": [
+        "A few hundred tokens with overlap is a common start",
+        "Too small loses context; too large dilutes the embedding",
+        "Split on structure, not only fixed windows",
+        "Keep metadata for filters and citations",
+        "Tune against an eval set"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "hybrid-search",
+      "tracks": ["general"],
+      "tags": ["ai", "rag", "search"],
+      "type": "concept",
+      "question": "What is hybrid search, and why combine BM25 with dense retrieval?",
+      "answer": "BM25 is a keyword ranking function: it scores documents by how often the query terms appear, weighted by how rare those terms are, so it is excellent at exact matches such as error codes, names and IDs. Dense retrieval with embeddings matches meaning, so it finds paraphrases but can miss exact terms. Hybrid search runs both and merges the two ranked lists, commonly with reciprocal rank fusion (RRF), which sums 1 / (k + rank) for each document across the lists and needs no score normalization. It usually improves recall over either method alone.",
+      "keyPoints": [
+        "BM25: term frequency × rarity; great for exact terms",
+        "Dense: meaning and paraphrases",
+        "Merge the lists, often with reciprocal rank fusion",
+        "RRF uses ranks, so scores need no normalization"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "reranking",
+      "tracks": ["general"],
+      "tags": ["ai", "rag", "search"],
+      "type": "concept",
+      "question": "What does a reranker do in a RAG pipeline?",
+      "answer": "The first retrieval stage uses a bi-encoder: the query and the documents are embedded separately, which is fast and lets document vectors be precomputed, but it misses fine interactions between them. A reranker, usually a cross-encoder, reads the query and one candidate together and outputs a relevance score, which is much more accurate but too slow to run over the whole corpus. So the pipeline retrieves a broad candidate set, for example the top 50 to 100, reranks it, and passes only the best few to the model. This raises precision at the top while keeping latency bounded.",
+      "keyPoints": [
+        "Bi-encoder retrieval: fast, precomputed, coarse",
+        "Cross-encoder reranker: reads query + doc together, accurate, slow",
+        "Retrieve wide (~50–100), rerank, keep the top few",
+        "Better precision at the top for bounded latency"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "evaluation",
+      "tracks": ["general"],
+      "tags": ["ai", "rag", "evaluation"],
+      "type": "explain-out-loud",
+      "question": "How do you evaluate a RAG system?",
+      "answer": "Evaluate retrieval and generation separately, against a labeled set of realistic questions. For retrieval, recall@k asks whether a relevant chunk appears in the top k, and MRR (mean reciprocal rank) averages 1 / rank of the first relevant result, so it rewards putting it near the top. For generation, faithfulness checks that every claim in the answer is supported by the retrieved context, and answer relevance checks that it actually addresses the question. LLM-as-judge scales these checks with a rubric, but judges have biases such as favoring longer answers or their own style, so calibrate them against human labels. Run the suite on every change to chunking, embeddings, prompts or models.",
+      "keyPoints": [
+        "Evaluate retrieval and generation separately",
+        "Recall@k and MRR for retrieval",
+        "Faithfulness and answer relevance for generation",
+        "LLM-as-judge with a rubric, calibrated against humans",
+        "Re-run on every pipeline change"
+      ],
+      "status": "draft"
+    }
+  ]
+}

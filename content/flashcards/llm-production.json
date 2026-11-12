@@ -1,0 +1,85 @@
+{
+  "deck": "llm-production",
+  "cards": [
+    {
+      "slug": "rate-limits-and-quotas",
+      "tracks": ["general"],
+      "tags": ["ai", "llm", "reliability"],
+      "type": "concept",
+      "question": "How do LLM provider rate limits work, and how do you live within them?",
+      "answer": "Providers limit requests per minute and tokens per minute, often counting input and output tokens separately, and usually per organization and per model; exceeding a limit returns HTTP 429, often with a retry-after header. Many limits refill continuously, like a token bucket, rather than resetting once a minute. To stay within them, throttle on the client with your own token bucket or a concurrency limit sized to the quota, queue and smooth bursts, prioritize interactive traffic over batch jobs, and send non-urgent work to batch APIs when the provider has one. Track usage against the quota so you raise limits before you hit them.",
+      "keyPoints": [
+        "Limits on requests and tokens per minute, per org and model",
+        "429 with retry-after when exceeded",
+        "Client-side token bucket or concurrency limit",
+        "Prioritize interactive traffic; batch the rest",
+        "Monitor usage against quota"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "timeouts-and-retries",
+      "tracks": ["general"],
+      "tags": ["ai", "llm", "reliability"],
+      "type": "explain-out-loud",
+      "question": "How should you set timeouts and retries for LLM calls?",
+      "answer": "Always set a timeout, sized to the expected output: a long generation legitimately takes tens of seconds, so streaming plus a timeout on idle time between chunks works better than one short total limit. Retry only errors that can succeed on a second try — 429, 5xx, overload and network failures — and never retry a 400 caused by a bad request. Use exponential backoff with jitter, for example a random wait between zero and base × 2^attempt, so many clients do not retry in lockstep, honor retry-after when present, and cap both the attempts and the total time. Retries must be safe: a request that triggers side effects needs an idempotency key.",
+      "keyPoints": [
+        "Always time out; for long outputs, time out on idle stream gaps",
+        "Retry 429, 5xx, overload, network errors — not 400",
+        "Exponential backoff with full jitter; honor retry-after",
+        "Cap attempts and total time",
+        "Side effects need idempotency keys"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "streaming",
+      "tracks": ["general"],
+      "tags": ["ai", "llm", "latency"],
+      "type": "concept",
+      "question": "Why stream LLM responses, and what does it complicate?",
+      "answer": "Streaming sends tokens as they are generated, usually over Server-Sent Events, so the user sees the first words after the time to first token instead of waiting for the whole answer; it also keeps long requests from hitting proxy idle timeouts. It complicates the rest of the system: errors can arrive mid-stream after you have already shown text, tool-call arguments arrive in fragments that must be assembled before parsing, and token usage is often only reported at the end. You also need to handle client disconnects, cancelling the upstream request so you stop paying for tokens nobody will read.",
+      "keyPoints": [
+        "Tokens as they are generated, usually over SSE",
+        "Better perceived latency (time to first token)",
+        "Errors can arrive mid-stream",
+        "Tool arguments arrive in fragments",
+        "Cancel upstream when the client disconnects"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "tokens-and-cost",
+      "tracks": ["general"],
+      "tags": ["ai", "llm", "cost"],
+      "type": "concept",
+      "question": "How do you account for tokens and cost in an LLM application?",
+      "answer": "Providers bill per token, and output tokens usually cost several times more than input tokens; the exact usage comes back in each response, so record it instead of estimating. Attribute input tokens, output tokens and cached tokens to a user, tenant and feature, so you can see cost per task and spot runaway agents. The main levers are prompt caching for long, repeated prefixes, trimming context and retrieved chunks, capping output length, routing simple requests to smaller models, and using batch APIs for offline work. Put budgets and alerts on top, because an agent loop can multiply cost quickly.",
+      "keyPoints": [
+        "Billed per token; output usually costs more than input",
+        "Record the usage the API returns",
+        "Attribute cost per user, tenant and feature",
+        "Levers: caching, smaller context, output caps, smaller models, batch",
+        "Budgets and alerts for loops"
+      ],
+      "status": "draft"
+    },
+    {
+      "slug": "failures-under-concurrency",
+      "tracks": ["general"],
+      "tags": ["ai", "llm", "reliability", "concurrency"],
+      "type": "explain-out-loud",
+      "question": "What goes wrong when many LLM calls run concurrently, and how do you prevent it?",
+      "answer": "Fanning out many calls at once hits the provider's rate limit, and if every client then retries immediately you get a retry storm that keeps the system overloaded. Unbounded concurrency also exhausts connection pools, memory and your own token budget. Bound concurrency with a semaphore or worker pool sized to the quota, put requests behind a queue with backpressure, use jittered backoff, and add a circuit breaker that fails fast while the provider is degraded. For resilience, fall back to another model or region, and degrade gracefully, for example with a cached or shorter answer, instead of failing the whole request.",
+      "keyPoints": [
+        "Bursts hit rate limits; synchronized retries cause storms",
+        "Unbounded fan-out exhausts pools, memory and budget",
+        "Semaphore or worker pool sized to quota",
+        "Queue with backpressure; jittered backoff; circuit breaker",
+        "Fallback model or region; graceful degradation"
+      ],
+      "status": "draft"
+    }
+  ]
+}
