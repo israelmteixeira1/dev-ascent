@@ -12,7 +12,8 @@
     "test:db": "vitest run --config vitest.db.config.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=../../.env scripts/migrate.mjs"
+    "db:migrate": "node --env-file-if-exists=../../.env scripts/migrate.mjs",
+    "content:feedback": "node --env-file-if-exists=../../.env scripts/content-feedback.mjs"
   },
   "dependencies": {
     "@devascent/domain": "workspace:*",

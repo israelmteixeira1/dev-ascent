@@ -10,6 +10,7 @@
     "dev": "pnpm --filter @devascent/web dev",
     "dev:api": "pnpm --filter @devascent/api dev",
     "check:bundle": "node scripts/check-bundle.mjs",
+    "content:feedback": "pnpm --filter @devascent/api content:feedback",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
