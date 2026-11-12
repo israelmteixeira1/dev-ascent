@@ -9,6 +9,7 @@ export * from './content/problems';
 export * from './srs/leitner';
 export * from './contract/api';
 export * from './contract/attempts';
+export * from './contract/flashcards';
 export * from './contract/safe-next';
 export {
   SIMULATION_MODEL_VERSION,

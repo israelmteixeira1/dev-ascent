@@ -8,6 +8,7 @@ import { CsrfGuard } from './common/csrf.guard';
 import { ConfigModule } from './config/config.module';
 import type { Env } from './config/env';
 import { DatabaseModule } from './db/database.module';
+import { FlashcardsModule } from './flashcards/flashcards.module';
 import { HealthController } from './health/health.controller';
 
 /** In memory, per IP: one API instance today (spec §11.4). Auth routes set a stricter limit. */
@@ -25,6 +26,7 @@ export class AppModule {
         ThrottlerModule.forRoot([DEFAULT_RATE_LIMIT]),
         AuthModule,
         AttemptsModule,
+        FlashcardsModule,
       ],
       controllers: [HealthController, ...(extra.controllers ?? [])],
       providers: [
