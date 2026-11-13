@@ -33,7 +33,7 @@ export async function openTestDb(url: string): Promise<TestDb> {
   return {
     db,
     reset: async () => {
-      await db.execute(sql`truncate table users, sessions, attempts, card_reviews cascade`);
+      await db.execute(sql`truncate table users, sessions, attempts, card_reviews, problem_attempts cascade`);
     },
     close: () => pool.end(),
   };

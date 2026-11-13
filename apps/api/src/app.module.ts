@@ -1,6 +1,7 @@
 import { Module, type DynamicModule, type Type } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ArenaModule } from './arena/arena.module';
 import { AttemptsModule } from './attempts/attempts.module';
 import { AuthModule } from './auth/auth.module';
 import { SessionGuard } from './auth/session.guard';
@@ -27,6 +28,7 @@ export class AppModule {
         AuthModule,
         AttemptsModule,
         FlashcardsModule,
+        ArenaModule,
       ],
       controllers: [HealthController, ...(extra.controllers ?? [])],
       providers: [

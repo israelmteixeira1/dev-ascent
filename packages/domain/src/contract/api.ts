@@ -8,6 +8,7 @@ export const API_ERROR_CODES = [
   'not_found',
   'draft_conflict',
   'attempt_submitted',
+  'judge_busy',
   'payload_too_large',
   'rate_limited',
   'service_unavailable',

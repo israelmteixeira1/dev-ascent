@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { check, index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
-import type { ArchitectureGraph, LeitnerBox, ReviewResult } from '@devascent/domain';
+import type { ArchitectureGraph, AttemptOutcome, LeitnerBox, ReviewResult } from '@devascent/domain';
 
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 
@@ -91,5 +91,34 @@ export const cardReviews = pgTable(
     check('card_reviews_box_check', sql`${t.box} between 1 and 5`),
     check('card_reviews_last_result_check', sql`${t.lastResult} in ('missed', 'hard', 'got-it')`),
     index('card_reviews_user_due_idx').on(t.userId, t.dueAt),
+  ],
+);
+
+/**
+ * One row per timed attempt at an arena problem. Rows are never updated: the next review is
+ * derived from this history (`nextProblemReview`), so there is no due date to keep in sync.
+ * `problem_slug` points to `content/problems/<slug>`, so problem slugs never change.
+ */
+export const problemAttempts = pgTable(
+  'problem_attempts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    problemSlug: text('problem_slug').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    durationSeconds: integer('duration_seconds').notNull(),
+    outcome: text('outcome').$type<AttemptOutcome>().notNull(),
+    failedTest: text('failed_test'),
+    /** "Where I got stuck". */
+    stuckNote: text('stuck_note').notNull().default(''),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check('problem_attempts_outcome_check', sql`${t.outcome} in ('passed', 'failed')`),
+    check('problem_attempts_duration_check', sql`${t.durationSeconds} >= 0`),
+    check('problem_attempts_failed_test_check', sql`${t.outcome} = 'failed' or ${t.failedTest} is null`),
+    index('problem_attempts_user_problem_idx').on(t.userId, t.problemSlug, t.startedAt),
   ],
 );
