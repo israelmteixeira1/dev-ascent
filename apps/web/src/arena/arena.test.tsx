@@ -248,6 +248,8 @@ describe('arena problem', () => {
       'POST /api/arena/problems/two-sum/run': { body: REPORT },
       'POST /api/arena/problems/two-sum/attempts': { status: 201, body: SAVED },
     });
+    // The page is on screen before its effects run: wait for the timer to start before time moves on.
+    await vi.waitFor(() => expect(vi.getTimerCount()).toBeGreaterThan(0));
     act(() => {
       vi.advanceTimersByTime(75_000);
     });
