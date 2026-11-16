@@ -50,6 +50,30 @@ export function interpreterFor(python: PythonCommand): Promise<PythonCommand> {
 const KEPT_VARIABLES = new Set(['PATH', 'SYSTEMROOT', 'TEMP', 'TMP']);
 
 export function minimalEnv(source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  // Windows spells them as it likes (Path, SystemRoot): compare without case.
-  return Object.fromEntries(Object.entries(source).filter(([name]) => KEPT_VARIABLES.has(name.toUpperCase())));
+  return pick(source, KEPT_VARIABLES);
 }
+
+/**
+ * What the Docker client needs to find its daemon (rootless sets DOCKER_HOST) and its own
+ * configuration. The container itself starts with none of this machine's variables.
+ */
+const DOCKER_VARIABLES = new Set([
+  ...KEPT_VARIABLES,
+  'HOME',
+  'USERPROFILE',
+  'APPDATA',
+  'LOCALAPPDATA',
+  'PROGRAMDATA',
+  'XDG_RUNTIME_DIR',
+  'DOCKER_HOST',
+  'DOCKER_CONTEXT',
+  'DOCKER_CONFIG',
+]);
+
+export function dockerEnv(source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  return pick(source, DOCKER_VARIABLES);
+}
+
+// Windows spells them as it likes (Path, SystemRoot): compare without case.
+const pick = (source: NodeJS.ProcessEnv, names: ReadonlySet<string>): NodeJS.ProcessEnv =>
+  Object.fromEntries(Object.entries(source).filter(([name]) => names.has(name.toUpperCase())));

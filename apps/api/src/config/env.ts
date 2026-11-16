@@ -13,10 +13,23 @@ export type Env = {
   sessionTtlDays: number;
   /**
    * `local` runs Python straight on this machine, without isolation: only for the author's own
-   * code on their own computer. `disabled` turns the arena's judge off. Docker comes later.
+   * code on their own computer. `docker` runs each solution in a locked-down container, the only
+   * mode a server may use. `disabled` turns the arena's judge off.
    */
-  judge: { mode: 'local' | 'disabled'; pythonBin: string | null };
+  judge: { mode: JudgeMode; pythonBin: string | null; dockerImage: string };
 };
+
+export const JUDGE_MODES = ['local', 'docker', 'disabled'] as const;
+export type JudgeMode = (typeof JUDGE_MODES)[number];
+
+/** Pinned to a tag the CI tests with. The image must be pulled beforehand: the judge never pulls. */
+export const DEFAULT_JUDGE_IMAGE = 'python:3.12-slim';
+
+/** A Docker image reference. It cannot start with a dash, so it is never read as an option. */
+const imageSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9._/:@-]*$/i)
+  .max(255);
 
 /** The parsed configuration, injected by type wherever it is needed. */
 export class AppConfig {
@@ -44,7 +57,8 @@ const schema = z.object({
     .refine((value) => value.split(',').every((id) => id.trim() === '' || /^\d+$/.test(id.trim()))),
   AUTH_TEST_LOGIN: z.enum(['true', 'false']).default('false'),
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
-  JUDGE_MODE: z.enum(['local', 'disabled']).optional(),
+  JUDGE_MODE: z.enum(JUDGE_MODES).optional(),
+  JUDGE_DOCKER_IMAGE: imageSchema.default(DEFAULT_JUDGE_IMAGE),
   /** A Python interpreter; without it the judge uses `py -3` on Windows and `python3` elsewhere. */
   PYTHON_BIN: z.string().optional(),
 });
@@ -98,6 +112,7 @@ export function parseEnv(raw: Record<string, string | undefined>): Env {
     judge: {
       mode: values.JUDGE_MODE ?? (values.NODE_ENV === 'production' ? 'disabled' : 'local'),
       pythonBin: values.PYTHON_BIN ?? null,
+      dockerImage: values.JUDGE_DOCKER_IMAGE,
     },
   };
 }

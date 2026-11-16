@@ -1,11 +1,11 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { JUDGE_LIMITS, type ArgType, type ProblemCase, type ProblemKind, type ReturnType } from '@devascent/domain';
 import harnessSource from './harness.py?raw';
-import { minimalEnv, type PythonCommand } from './python';
+import { dockerEnv, minimalEnv, type PythonCommand } from './python';
 
 export type RunSpec = {
   kind: ProblemKind;
@@ -36,6 +36,19 @@ export type RunnerOptions = { startupTimeoutMs: number; maxOutputBytes: number }
 
 export const DEFAULT_RUNNER_OPTIONS: RunnerOptions = { startupTimeoutMs: 10_000, maxOutputBytes: 5_000_000 };
 
+/** A container takes longer than a bare process to start. */
+export const DOCKER_RUNNER_OPTIONS: RunnerOptions = { ...DEFAULT_RUNNER_OPTIONS, startupTimeoutMs: 20_000 };
+
+/** How one run starts the harness, and where the harness finds the solution. */
+type Launch = {
+  command: string;
+  args: string[];
+  env: NodeJS.ProcessEnv;
+  solutionPath: string;
+  /** Called when a run is stopped early, once its process is killed. */
+  abort?: () => void;
+};
+
 /** Time between Python measuring a case and the judge hearing about it. */
 const CASE_SLACK_MS = 250;
 
@@ -59,41 +72,111 @@ const asciiJson = (value: unknown) =>
   JSON.stringify(value).replace(/[\u007f-￿]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 
 /**
- * Runs the solution in a fresh Python process, in a temporary directory removed afterwards.
- * No isolation: only for the author's own code on their own machine.
+ * Runs the solution in a fresh Python process on this machine, in a temporary directory removed
+ * afterwards. No isolation: only for the author's own code on their own computer.
  */
-export async function runLocally(
+export function runLocally(
   python: PythonCommand,
   spec: RunSpec,
   options: RunnerOptions = DEFAULT_RUNNER_OPTIONS,
 ): Promise<RunOutcome> {
+  return runInTempDir(spec, options, false, (dir) => ({
+    command: python.command,
+    args: [...python.args, '-I', '-B', path.join(dir, 'harness.py')],
+    env: minimalEnv(),
+    solutionPath: path.join(dir, 'solution.py'),
+  }));
+}
+
+export type DockerJudge = { command: string; image: string };
+
+/** Where the run's directory appears inside the container. */
+const CONTAINER_DIR = '/judge';
+
+/**
+ * The `docker run` arguments of one run. The container has no network, a read-only root, no
+ * capabilities and an unprivileged user; it sees the solution read-only and none of this
+ * machine's environment. Memory, CPU and process limits need cgroup v2 on the host.
+ */
+export function dockerRunArgs(image: string, dir: string, name: string): string[] {
+  return [
+    'run',
+    '--rm',
+    '--interactive',
+    '--pull=never',
+    `--name=${name}`,
+    '--network=none',
+    '--read-only',
+    '--tmpfs=/tmp:rw,noexec,nosuid,size=16m',
+    '--memory=256m',
+    '--memory-swap=256m',
+    '--cpus=1',
+    '--pids-limit=64',
+    '--cap-drop=ALL',
+    '--security-opt=no-new-privileges',
+    '--user=65534:65534',
+    '--mount',
+    `type=bind,source=${dir},target=${CONTAINER_DIR},readonly`,
+    `--workdir=${CONTAINER_DIR}`,
+    '--entrypoint=python',
+    image,
+    '-I',
+    '-B',
+    `${CONTAINER_DIR}/harness.py`,
+  ];
+}
+
+/** Runs the solution in a fresh container, removed afterwards. */
+export function runInDocker(
+  docker: DockerJudge,
+  spec: RunSpec,
+  options: RunnerOptions = DOCKER_RUNNER_OPTIONS,
+): Promise<RunOutcome> {
+  return runInTempDir(spec, options, true, (dir) => {
+    const name = `devascent-judge-${randomBytes(8).toString('hex')}`;
+    const env = dockerEnv();
+    return {
+      command: docker.command,
+      args: dockerRunArgs(docker.image, dir, name),
+      env,
+      solutionPath: `${CONTAINER_DIR}/solution.py`,
+      // Killing the CLI leaves the container running: it is stopped by name.
+      abort: () => execFile(docker.command, ['kill', name], { env, windowsHide: true }, () => {}),
+    };
+  });
+}
+
+async function runInTempDir(
+  spec: RunSpec,
+  options: RunnerOptions,
+  /** The container runs as another user: the files must be readable by others. */
+  shared: boolean,
+  launch: (dir: string) => Launch,
+): Promise<RunOutcome> {
   const dir = await mkdtemp(path.join(tmpdir(), 'devascent-judge-'));
   try {
-    const solutionPath = path.join(dir, 'solution.py');
-    const harnessPath = path.join(dir, 'harness.py');
-    await writeFile(solutionPath, spec.source, 'utf8');
-    await writeFile(harnessPath, harnessSource, 'utf8');
-    return await execute(python, spec, solutionPath, harnessPath, dir, options);
+    // A comma would split the --mount option.
+    if (shared && dir.includes(',')) {
+      return { outcome: 'judge-error', error: 'The temporary directory has a comma in its path.' };
+    }
+    const mode = shared ? 0o644 : 0o600;
+    await writeFile(path.join(dir, 'solution.py'), spec.source, { encoding: 'utf8', mode });
+    await writeFile(path.join(dir, 'harness.py'), harnessSource, { encoding: 'utf8', mode });
+    if (shared) await chmod(dir, 0o755);
+    return await execute(launch(dir), spec, dir, options);
   } finally {
     await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 
-function execute(
-  python: PythonCommand,
-  spec: RunSpec,
-  solutionPath: string,
-  harnessPath: string,
-  cwd: string,
-  options: RunnerOptions,
-): Promise<RunOutcome> {
+function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOptions): Promise<RunOutcome> {
   const nonce = randomBytes(16).toString('hex');
   const prefix = `${nonce} `;
 
   return new Promise((resolve) => {
-    const child = spawn(python.command, [...python.args, '-I', '-B', harnessPath], {
+    const child = spawn(launch.command, launch.args, {
       cwd,
-      env: minimalEnv(),
+      env: launch.env,
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     });
@@ -111,6 +194,7 @@ function execute(
       ending ??= outcome;
       clearTimeout(timer);
       child.kill('SIGKILL');
+      launch.abort?.();
     };
     const remaining = (from: number): CaseOutcome[] =>
       spec.cases.slice(from).map((c) => ({ name: c.name, outcome: 'not-run' }));
@@ -182,9 +266,7 @@ function execute(
       if (stderr.length < JUDGE_LIMITS.maxErrorChars) stderr += chunk;
     });
 
-    child.on('error', () =>
-      stop({ outcome: 'judge-error', error: `Python could not be started with "${python.command}".` }),
-    );
+    child.on('error', () => stop({ outcome: 'judge-error', error: `The judge could not start "${launch.command}".` }));
     child.on('close', () => {
       clearTimeout(timer);
       if (ending) return resolve(ending);
@@ -223,7 +305,7 @@ function execute(
         entrypoint: spec.entrypoint,
         argTypes: spec.argTypes ?? null,
         returnType: spec.returnType ?? 'json',
-        solutionPath,
+        solutionPath: launch.solutionPath,
         cases: spec.cases,
         limits: { stdout: JUDGE_LIMITS.maxStdoutChars, error: JUDGE_LIMITS.maxErrorChars },
       }),

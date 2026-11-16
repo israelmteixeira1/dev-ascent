@@ -29,12 +29,9 @@ describe('parseEnv', () => {
   });
 
   it('runs the judge locally outside production and turns it off in production', () => {
-    expect(parseEnv(BASE).judge).toEqual({ mode: 'local', pythonBin: null });
-    expect(parseEnv({ ...BASE, ...GITHUB, NODE_ENV: 'production' }).judge).toEqual({
-      mode: 'disabled',
-      pythonBin: null,
-    });
-    expect(parseEnv({ ...BASE, JUDGE_MODE: 'disabled', PYTHON_BIN: 'C:\\Python311\\python.exe' }).judge).toEqual({
+    expect(parseEnv(BASE).judge).toEqual({ mode: 'local', pythonBin: null, dockerImage: 'python:3.12-slim' });
+    expect(parseEnv({ ...BASE, ...GITHUB, NODE_ENV: 'production' }).judge).toMatchObject({ mode: 'disabled' });
+    expect(parseEnv({ ...BASE, JUDGE_MODE: 'disabled', PYTHON_BIN: 'C:\\Python311\\python.exe' }).judge).toMatchObject({
       mode: 'disabled',
       pythonBin: 'C:\\Python311\\python.exe',
     });
@@ -46,8 +43,21 @@ describe('parseEnv', () => {
     );
   });
 
+  it('runs the judge in Docker in production, with the image it is given', () => {
+    const server = { ...BASE, ...GITHUB, NODE_ENV: 'production', JUDGE_MODE: 'docker' };
+    expect(parseEnv(server).judge).toEqual({ mode: 'docker', pythonBin: null, dockerImage: 'python:3.12-slim' });
+    expect(parseEnv({ ...server, JUDGE_DOCKER_IMAGE: 'ghcr.io/me/judge@sha256:abc123' }).judge.dockerImage).toBe(
+      'ghcr.io/me/judge@sha256:abc123',
+    );
+  });
+
+  it('refuses an image that would be read as a docker option', () => {
+    expect(() => parseEnv({ ...BASE, JUDGE_DOCKER_IMAGE: '--privileged' })).toThrow(/JUDGE_DOCKER_IMAGE/);
+    expect(() => parseEnv({ ...BASE, JUDGE_DOCKER_IMAGE: 'python 3' })).toThrow(/JUDGE_DOCKER_IMAGE/);
+  });
+
   it('refuses an unknown judge mode', () => {
-    expect(() => parseEnv({ ...BASE, JUDGE_MODE: 'docker' })).toThrow(/JUDGE_MODE/);
+    expect(() => parseEnv({ ...BASE, JUDGE_MODE: 'sandbox' })).toThrow(/JUDGE_MODE/);
   });
 
   it('never echoes values in its errors', () => {

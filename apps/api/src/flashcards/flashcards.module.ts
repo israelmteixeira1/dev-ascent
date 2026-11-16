@@ -13,5 +13,6 @@ import { FlashcardsService } from './flashcards.service';
     { provide: CARD_REVIEWS_STORE, useClass: CardReviewsRepository },
     { provide: CLOCK, useValue: systemClock },
   ],
+  exports: [FlashcardsService],
 })
 export class FlashcardsModule {}

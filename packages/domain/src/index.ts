@@ -12,6 +12,7 @@ export * from './judge/judge';
 export * from './contract/api';
 export * from './contract/arena';
 export * from './contract/attempts';
+export * from './contract/due';
 export * from './contract/flashcards';
 export * from './contract/safe-next';
 export {

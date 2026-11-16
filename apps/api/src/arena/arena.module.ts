@@ -15,5 +15,6 @@ import { PROBLEM_ATTEMPTS_STORE, ProblemAttemptsRepository } from './problem-att
     { provide: PROBLEM_ATTEMPTS_STORE, useClass: ProblemAttemptsRepository },
     { provide: CLOCK, useValue: systemClock },
   ],
+  exports: [ArenaService],
 })
 export class ArenaModule {}

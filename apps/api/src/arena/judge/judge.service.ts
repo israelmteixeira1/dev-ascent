@@ -10,7 +10,7 @@ import {
   type RunResult,
 } from '@devascent/domain';
 import { AppConfig } from '../../config/env';
-import { runLocally, type CaseOutcome } from './local-runner';
+import { runInDocker, runLocally, type CaseOutcome, type RunOutcome, type RunSpec } from './runner';
 import { interpreterFor, pythonCommand, type PythonCommand } from './python';
 
 /** JUDGE_MODE is `disabled`. */
@@ -52,18 +52,12 @@ export class JudgeService {
 
   /** Runs every case, in order, and compares each answer with the expected one. */
   async run(problem: JudgedProblem, cases: ProblemCase[], source: string): Promise<RunResult> {
-    if (this.config.env.judge.mode !== 'local') throw new JudgeUnavailableError();
+    if (this.config.env.judge.mode === 'disabled') throw new JudgeUnavailableError();
     if (source.length > JUDGE_LIMITS.maxSourceChars) throw new SolutionTooLargeError();
     if (this.running) throw new JudgeBusyError();
     this.running = true;
     try {
-      let python: PythonCommand;
-      try {
-        python = await interpreterFor(this.python);
-      } catch (error) {
-        return { status: 'judge-error', cases: [], error: (error as Error).message };
-      }
-      const outcome = await runLocally(python, {
+      const outcome = await this.execute({
         kind: problem.kind,
         entrypoint: problem.entrypoint,
         argTypes: problem.argTypes,
@@ -80,6 +74,18 @@ export class JudgeService {
     } finally {
       this.running = false;
     }
+  }
+
+  private async execute(spec: RunSpec): Promise<RunOutcome> {
+    const { judge } = this.config.env;
+    if (judge.mode === 'docker') return runInDocker({ command: 'docker', image: judge.dockerImage }, spec);
+    let python: PythonCommand;
+    try {
+      python = await interpreterFor(this.python);
+    } catch (error) {
+      return { outcome: 'judge-error', error: (error as Error).message };
+    }
+    return runLocally(python, spec);
   }
 }
 

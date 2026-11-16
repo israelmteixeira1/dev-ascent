@@ -9,6 +9,7 @@ import { CsrfGuard } from './common/csrf.guard';
 import { ConfigModule } from './config/config.module';
 import type { Env } from './config/env';
 import { DatabaseModule } from './db/database.module';
+import { DueModule } from './due/due.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
 import { HealthController } from './health/health.controller';
 
@@ -29,6 +30,7 @@ export class AppModule {
         AttemptsModule,
         FlashcardsModule,
         ArenaModule,
+        DueModule,
       ],
       controllers: [HealthController, ...(extra.controllers ?? [])],
       providers: [
