@@ -1,6 +1,6 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DeckSummary, DueCards, StudyCard } from '@devascent/domain';
 import { App } from '../App';
@@ -144,6 +144,44 @@ describe('review session', () => {
     expect(bodiesOf(spy, 'POST', path(CONCEPT, 'review'))).toEqual([{ result: 'got-it' }]);
     expect(bodiesOf(spy, 'POST', path(OTHER, 'review'))).toEqual([{ result: 'missed' }]);
     expect(urlsOf(spy)).toContain('/api/flashcards/due?track=general&deck=hash-maps');
+  });
+
+  it('does not skip a card of the next deck when an earlier rating answers late', async () => {
+    let answer: (reply: { body: StudyCard }) => void = () => {};
+    let loads = 0;
+    mockApi({
+      'GET /api/me': SIGNED_IN,
+      'GET /api/flashcards/due': () => ({ body: due((loads += 1) === 1 ? [CONCEPT] : [OTHER, DRAFT]) }),
+      [`POST ${path(CONCEPT, 'review')}`]: () => new Promise((resolve) => (answer = resolve)),
+    });
+    function GoTo() {
+      const navigate = useNavigate();
+      return (
+        <button type="button" onClick={() => void navigate('/flashcards/review?track=general&deck=rag')}>
+          Switch deck
+        </button>
+      );
+    }
+    render(
+      <MemoryRouter initialEntries={['/flashcards/review?track=general&deck=hash-maps']}>
+        <App />
+        <GoTo />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: CONCEPT.question });
+    await userEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Switch deck' }));
+    await screen.findByRole('heading', { name: OTHER.question });
+    await act(async () => {
+      answer({ body: CONCEPT });
+      // Let the late answer reach the page before looking at it.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(screen.getByRole('heading', { name: OTHER.question })).toBeInTheDocument();
+    expect(screen.getByText('Card 1 of 2')).toBeInTheDocument();
   });
 
   it('keeps the card when the rating fails to save', async () => {

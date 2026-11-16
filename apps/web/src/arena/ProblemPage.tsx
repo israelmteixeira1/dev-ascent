@@ -22,21 +22,35 @@ import styles from './arena.module.css';
 
 type Loaded = { key: string; problem: ArenaProblem | 'not-found' | 'error' };
 
-/** The code being written survives a reload, until the attempt is saved. */
+/**
+ * The attempt in progress survives a reload until it is saved: the code, when it started and the
+ * time spent on it, so a reload changes neither the duration nor the review dates.
+ */
 export const draftKey = (slug: string) => `devascent:arena:draft:${slug}`;
 
-function readDraft(slug: string): string | null {
+export type Draft = { source: string; startedAt: string; elapsedSeconds: number };
+
+function readDraft(slug: string): Draft | null {
   try {
-    return localStorage.getItem(draftKey(slug));
+    const raw = localStorage.getItem(draftKey(slug));
+    if (raw === null) return null;
+    const draft = JSON.parse(raw) as Partial<Draft>;
+    const valid =
+      typeof draft.source === 'string' &&
+      typeof draft.startedAt === 'string' &&
+      !Number.isNaN(Date.parse(draft.startedAt)) &&
+      typeof draft.elapsedSeconds === 'number' &&
+      draft.elapsedSeconds >= 0;
+    return valid ? (draft as Draft) : null;
   } catch {
     return null;
   }
 }
 
-function writeDraft(slug: string, source: string | null): void {
+function writeDraft(slug: string, draft: Draft | null): void {
   try {
-    if (source === null) localStorage.removeItem(draftKey(slug));
-    else localStorage.setItem(draftKey(slug), source);
+    if (draft === null) localStorage.removeItem(draftKey(slug));
+    else localStorage.setItem(draftKey(slug), JSON.stringify(draft));
   } catch {
     // Storage may be off (private window): the draft just does not survive a reload.
   }
@@ -153,23 +167,28 @@ type RunState =
 
 function Practice({ problem, onSaved }: { problem: ArenaProblem; onSaved: (attempt: ProblemAttempt) => void }) {
   const { expire } = useSession();
-  const [source, setSource] = useState(() => readDraft(problem.slug) ?? problem.starterCode);
+  const [draft] = useState(() => readDraft(problem.slug));
+  const [source, setSource] = useState(draft?.source ?? problem.starterCode);
   const [minutes, setMinutes] = useState(TIMER_MINUTES[problem.difficulty]);
-  const { elapsedSeconds } = useActiveTimer();
-  const [startedAt] = useState(() => new Date());
+  const { elapsedSeconds } = useActiveTimer(draft?.elapsedSeconds ?? 0);
+  const [startedAt] = useState(() => (draft ? new Date(draft.startedAt) : new Date()));
   const [run, setRun] = useState<RunState>({ state: 'idle' });
-  const [lastReport, setLastReport] = useState<RunReport | null>(null);
+  // The last report, with the code it judged: a report of other code says nothing about this one.
+  const [lastRun, setLastRun] = useState<{ report: RunReport; source: string } | null>(null);
 
   useEffect(() => {
-    writeDraft(problem.slug, source === problem.starterCode ? null : source);
-  }, [problem.slug, problem.starterCode, source]);
+    writeDraft(
+      problem.slug,
+      source === problem.starterCode ? null : { source, startedAt: startedAt.toISOString(), elapsedSeconds },
+    );
+  }, [problem.slug, problem.starterCode, source, startedAt, elapsedSeconds]);
 
   const onRun = async () => {
     setRun({ state: 'running' });
     try {
       const report = await runSolution(problem.slug, source);
       setRun({ state: 'done', report });
-      setLastReport(report);
+      setLastRun({ report, source });
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return expire();
       const message =
@@ -234,7 +253,8 @@ function Practice({ problem, onSaved }: { problem: ArenaProblem; onSaved: (attem
 
       <FinishAttempt
         problem={problem}
-        lastReport={lastReport}
+        lastReport={lastRun?.report ?? null}
+        changedSinceRun={lastRun !== null && lastRun.source !== source}
         startedAt={startedAt}
         elapsedSeconds={elapsedSeconds}
         busy={run.state === 'running'}
@@ -281,20 +301,34 @@ function Examples({ problem }: { problem: ArenaProblem }) {
 type FinishProps = {
   problem: ArenaProblem;
   lastReport: RunReport | null;
+  /** The code was edited after the last run: that run no longer judges it. */
+  changedSinceRun: boolean;
   startedAt: Date;
   elapsedSeconds: number;
   busy: boolean;
   onSaved: (attempt: ProblemAttempt) => void;
 };
 
-/** Records the attempt with the result of the last run: passed only when every case passed. */
-function FinishAttempt({ problem, lastReport, startedAt, elapsedSeconds, busy, onSaved }: FinishProps) {
+/**
+ * Records the attempt with the result of the last run: passed only when every case passed and
+ * the code is still the code that ran.
+ */
+function FinishAttempt({
+  problem,
+  lastReport,
+  changedSinceRun,
+  startedAt,
+  elapsedSeconds,
+  busy,
+  onSaved,
+}: FinishProps) {
   const { expire } = useSession();
   const [stuckNote, setStuckNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const passed = lastReport?.status === 'passed';
-  const failedTest = lastReport && !passed ? firstFailure(lastReport) : null;
+  const current = changedSinceRun ? null : lastReport;
+  const passed = current?.status === 'passed';
+  const failedTest = current && !passed ? firstFailure(current) : null;
 
   const save = async () => {
     setSaving(true);
@@ -320,11 +354,13 @@ function FinishAttempt({ problem, lastReport, startedAt, elapsedSeconds, busy, o
     <section className={`${pages.section} ${styles.finish}`} aria-label="Finish the attempt">
       <h2>Finish the attempt</h2>
       <p className={pages.notice}>
-        {lastReport === null
-          ? 'No run yet: the attempt will count as failed.'
-          : passed
-            ? 'Your last run passed every case.'
-            : `Your last run did not pass${failedTest ? `: first failure on “${failedTest}”` : ''}. The attempt will count as failed.`}
+        {changedSinceRun
+          ? 'The code changed after the last run: run it again, or the attempt will count as failed.'
+          : lastReport === null
+            ? 'No run yet: the attempt will count as failed.'
+            : passed
+              ? 'Your last run passed every case.'
+              : `Your last run did not pass${failedTest ? `: first failure on “${failedTest}”` : ''}. The attempt will count as failed.`}
       </p>
       <label htmlFor="stuck-note">Where did you get stuck?</label>
       <textarea
