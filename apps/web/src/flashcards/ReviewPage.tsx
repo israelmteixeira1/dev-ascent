@@ -40,8 +40,11 @@ export function ReviewPage() {
   }, [key, track.slug, deck, expire]);
 
   const session = loaded?.key === key ? loaded.session : null;
+  // Only the session the card came from: a rating answered after a switch of deck changes nothing.
   const update = (change: (s: Session) => Session) =>
-    setLoaded((prev) => (prev && prev.session !== 'error' ? { ...prev, session: change(prev.session) } : prev));
+    setLoaded((prev) =>
+      prev && prev.key === key && prev.session !== 'error' ? { ...prev, session: change(prev.session) } : prev,
+    );
   const backToDecks = `/flashcards?${new URLSearchParams({ track: track.slug })}`;
 
   return (

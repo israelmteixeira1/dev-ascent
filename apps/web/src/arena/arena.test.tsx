@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ArenaProblem, ProblemAttempt, ProblemSummary, RunReport } from '@devascent/domain';
 import { App } from '../App';
 import { callsOf, mockApi, SIGNED_IN } from '../test/api';
-import { draftKey } from './ProblemPage';
+import { draftKey, type Draft } from './ProblemPage';
 
 const NEW = { attemptCount: 0, lastAttempt: null, nextReviewAt: null, due: true };
 
@@ -294,6 +294,23 @@ describe('arena problem', () => {
     });
   });
 
+  it('counts the attempt as failed when the code changed after a passing run', async () => {
+    const spy = await openTwoSum(TWO_SUM, {
+      'POST /api/arena/problems/two-sum/run': { body: PASSED },
+      'POST /api/arena/problems/two-sum/attempts': { status: 201, body: SAVED },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await screen.findByText('Your last run passed every case.');
+    await userEvent.type(editor(), '# broken');
+    expect(screen.getByText(/The code changed after the last run/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Save attempt' }));
+    await screen.findByText(/Attempt saved/);
+    expect(callsOf(spy).find((c) => c.path.endsWith('/attempts'))?.body).toMatchObject({
+      outcome: 'failed',
+      failedTest: null,
+    });
+  });
+
   it('counts an attempt with no run as failed', async () => {
     await openTwoSum();
     expect(screen.getByText('No run yet: the attempt will count as failed.')).toBeInTheDocument();
@@ -303,7 +320,7 @@ describe('arena problem', () => {
     await openTwoSum(TWO_SUM, { 'POST /api/arena/problems/two-sum/attempts': { status: 201, body: SAVED } });
     await userEvent.clear(editor());
     await userEvent.type(editor(), 'x = 1');
-    expect(localStorage.getItem(draftKey('two-sum'))).toBe('x = 1');
+    expect(JSON.parse(localStorage.getItem(draftKey('two-sum'))!)).toMatchObject({ source: 'x = 1' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Save attempt' }));
     await screen.findByText(/Attempt saved/);
@@ -312,10 +329,30 @@ describe('arena problem', () => {
   });
 
   it('opens on the saved code', async () => {
-    localStorage.setItem(draftKey('two-sum'), 'x = 2');
+    const draft: Draft = { source: 'x = 2', startedAt: '2026-11-16T10:00:00.000Z', elapsedSeconds: 30 };
+    localStorage.setItem(draftKey('two-sum'), JSON.stringify(draft));
     await openTwoSum();
     expect(editor()).toHaveValue('x = 2');
     await userEvent.click(screen.getByRole('button', { name: 'Reset code' }));
+    expect(editor()).toHaveValue(STARTER);
+  });
+
+  it('keeps the start and the time spent across a reload', async () => {
+    const draft: Draft = { source: 'x = 2', startedAt: '2026-11-16T10:00:00.000Z', elapsedSeconds: 600 };
+    localStorage.setItem(draftKey('two-sum'), JSON.stringify(draft));
+    const spy = await openTwoSum(TWO_SUM, {
+      'POST /api/arena/problems/two-sum/attempts': { status: 201, body: SAVED },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Save attempt' }));
+    await screen.findByText(/Attempt saved/);
+    const body = callsOf(spy).find((c) => c.path.endsWith('/attempts'))?.body as Record<string, unknown>;
+    expect(body.startedAt).toBe('2026-11-16T10:00:00.000Z');
+    expect(body.durationSeconds).toBeGreaterThanOrEqual(600);
+  });
+
+  it('ignores a saved draft it cannot read', async () => {
+    localStorage.setItem(draftKey('two-sum'), 'not json');
+    await openTwoSum();
     expect(editor()).toHaveValue(STARTER);
   });
 });
