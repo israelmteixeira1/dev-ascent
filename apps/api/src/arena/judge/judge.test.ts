@@ -64,6 +64,61 @@ def two_sum(nums, target):
     expect(result.cases[1]?.durationMs).toBeNull();
   });
 
+  it('stops at a case that returns past the limit, even inside the slack', async () => {
+    const late = `
+import time
+
+def two_sum(nums, target):
+    if target == 9:
+        time.sleep(0.6)
+    return [0, 1]
+`;
+    const result = await judge().run({ ...TWO_SUM, timeLimitS: 0.5 }, CASES, late);
+    expect(result.cases.map((c) => c.status)).toEqual(['timeout', 'not-run', 'not-run']);
+  });
+
+  it('finishes a run whose solution leaves a thread running', async () => {
+    const lingering = `
+import threading, time
+threading.Thread(target=lambda: time.sleep(60)).start()
+${CORRECT}`;
+    const started = Date.now();
+    const result = await judge().run(TWO_SUM, CASES, lingering);
+    expect(result.status).toBe('passed');
+    expect(Date.now() - started).toBeLessThan(10_000);
+    // The judge is free again.
+    expect((await judge().run(TWO_SUM, CASES, CORRECT)).status).toBe('passed');
+  });
+
+  it('never sends the expected answers to the solution', async () => {
+    const snooping = `
+import sys
+
+def two_sum(nums, target):
+    frame = sys._getframe(1)
+    while not isinstance(frame.f_locals.get("spec"), dict):
+        frame = frame.f_back
+    return sorted(frame.f_locals["spec"]["cases"][-1].keys())
+`;
+    const result = await judge().run(TWO_SUM, CASES, snooping);
+    expect(result.cases[0]?.actual).toEqual(['args', 'name']);
+  });
+
+  it('does not take a forged end of run for a pass', async () => {
+    const forging = `
+import os, sys
+frame = sys._getframe(0)
+while not isinstance(frame.f_locals.get("spec"), dict):
+    frame = frame.f_back
+sys.__stdout__.write(frame.f_locals["spec"]["nonce"] + ' {"event": "done"}\\n')
+sys.__stdout__.flush()
+os._exit(0)
+`;
+    const result = await judge().run(TWO_SUM, CASES, forging);
+    expect(result.status).toBe('judge-error');
+    expect(result.error).toMatch(/did not expect/);
+  });
+
   it('reports an exception with the line of the solution that raised it', async () => {
     const raising = 'def two_sum(nums, target):\n    return nums[10]\n';
     const result = await judge().run(TWO_SUM, CASES, raising);

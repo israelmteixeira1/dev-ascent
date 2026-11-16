@@ -17,15 +17,23 @@ const DAY_MS = 86_400_000;
 /**
  * The next review, counted from the start of the latest attempt. Null when the problem was never
  * attempted, or when the last cycle ended with its 7-day review passed: the problem is done.
- * Attempts may come in any order; ties keep the order given.
+ * Only a pass on or after its review date moves the cycle on; an earlier pass is practice and
+ * keeps the same step, counted again from that attempt. Attempts may come in any order; ties
+ * keep the order given.
  */
 export function nextProblemReview(attempts: readonly ScheduledAttempt[]): Date | null {
   const history = [...attempts].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
-  const last = history.at(-1);
-  if (!last) return null;
-  const lastFailure = history.findLastIndex((attempt) => attempt.outcome === 'failed');
-  // The cycle runs from the last failure, or from the first attempt when nothing failed.
-  const position = history.length - Math.max(lastFailure, 0);
-  const days = PROBLEM_REVIEW_DAYS[position - 1];
-  return days === undefined ? null : new Date(last.startedAt.getTime() + days * DAY_MS);
+  if (history.length === 0) return null;
+  let step = 0;
+  let next: number | null = null;
+  history.forEach((attempt, i) => {
+    const at = attempt.startedAt.getTime();
+    if (i === 0 || attempt.outcome === 'failed') step = 0;
+    // The cycle ended: a later pass changes nothing, only a failure starts it again.
+    else if (next === null) return;
+    else if (at >= next) step += 1;
+    const days = PROBLEM_REVIEW_DAYS[step];
+    next = days === undefined ? null : at + days * DAY_MS;
+  });
+  return next === null ? null : new Date(next);
 }

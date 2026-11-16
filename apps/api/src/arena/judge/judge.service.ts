@@ -69,7 +69,15 @@ export class JudgeService {
       if (outcome.outcome !== 'ran') {
         return { status: outcome.outcome, cases: [], error: outcome.error };
       }
-      const results = outcome.cases.map((c, i) => judgeCase(problem, cases[i]!, c));
+      const judged = outcome.cases.map((c, i) => judgeCase(problem, cases[i]!, c));
+      // A run stops at its first timeout: a case that returned past the limit counts as one.
+      const stoppedAt = judged.findIndex((r) => r.status === 'timeout');
+      const results =
+        stoppedAt === -1
+          ? judged
+          : judged.map((r, i): CaseResult =>
+              i <= stoppedAt ? r : { name: r.name, status: 'not-run', durationMs: null, stdout: '' },
+            );
       return { status: results.every((r) => r.status === 'passed') ? 'passed' : 'failed', cases: results, error: null };
     } finally {
       this.running = false;

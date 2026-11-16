@@ -9,6 +9,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import sys
 import time
 import traceback
@@ -212,3 +213,6 @@ def main():
 
 
 main()
+# Exit now: a normal exit waits for threads and atexit handlers the solution left behind.
+PROTOCOL.flush()
+os._exit(0)

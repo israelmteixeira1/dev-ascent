@@ -36,6 +36,23 @@ describe('nextProblemReview', () => {
     expect(nextProblemReview(history(...attempts))).toEqual(day(dueDay));
   });
 
+  it('keeps the step for a pass before its review date, counted from that pass', () => {
+    // Failed, then solved 20 minutes later: still the 1-day review, from the pass.
+    const later = new Date(START.getTime() + 20 * 60_000);
+    expect(
+      nextProblemReview([
+        { startedAt: START, outcome: 'failed' },
+        { startedAt: later, outcome: 'passed' },
+      ]),
+    ).toEqual(new Date(later.getTime() + 86_400_000));
+    // Passed on day 2, a day before the 3-day review of day 1: still that review, from day 2.
+    expect(nextProblemReview(history([0, 'passed'], [1, 'passed'], [2, 'passed']))).toEqual(day(2 + 3));
+  });
+
+  it('never ends a cycle with passes on the same day', () => {
+    expect(nextProblemReview(history([0, 'passed'], [0, 'passed'], [0, 'passed'], [0, 'passed']))).toEqual(day(1));
+  });
+
   it('ends the cycle when the 7-day review passes', () => {
     expect(nextProblemReview(history([0, 'passed'], [1, 'passed'], [4, 'passed'], [11, 'passed']))).toBeNull();
   });

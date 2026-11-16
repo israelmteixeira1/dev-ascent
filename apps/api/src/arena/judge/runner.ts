@@ -52,6 +52,16 @@ type Launch = {
 /** Time between Python measuring a case and the judge hearing about it. */
 const CASE_SLACK_MS = 250;
 
+/** How long Python may take to exit once it reports the last case. */
+const EXIT_GRACE_MS = 1_000;
+
+/**
+ * What the harness needs to run a case. The solution runs in the same process and could read
+ * anything sent here: the inputs of hidden cases go, since they must run, but never the answers.
+ */
+const withoutAnswer = (testCase: ProblemCase) =>
+  'ops' in testCase ? { name: testCase.name, ops: testCase.ops } : { name: testCase.name, args: testCase.args };
+
 type HarnessEvent =
   | { event: 'ready' }
   | { event: 'done' }
@@ -115,6 +125,8 @@ export function dockerRunArgs(image: string, dir: string, name: string): string[
     '--cap-drop=ALL',
     '--security-opt=no-new-privileges',
     '--user=65534:65534',
+    // What the solution prints reaches the judge through the attached streams, never the host's disk.
+    '--log-driver=none',
     '--mount',
     `type=bind,source=${dir},target=${CONTAINER_DIR},readonly`,
     `--workdir=${CONTAINER_DIR}`,
@@ -195,6 +207,16 @@ function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOpti
       clearTimeout(timer);
       child.kill('SIGKILL');
       launch.abort?.();
+      // A process the solution started may hold the pipes open after Python dies: close our ends,
+      // or the close event never comes.
+      child.stdout.destroy();
+      child.stderr.destroy();
+    };
+    const countOutput = (chunk: string): boolean => {
+      outputBytes += Buffer.byteLength(chunk);
+      if (outputBytes <= options.maxOutputBytes) return true;
+      stop({ outcome: 'judge-error', error: 'The solution produced more output than the judge accepts.' });
+      return false;
     };
     const remaining = (from: number): CaseOutcome[] =>
       spec.cases.slice(from).map((c) => ({ name: c.name, outcome: 'not-run' }));
@@ -221,6 +243,10 @@ function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOpti
           ready = true;
           return watchCase();
         case 'case':
+          // Events come once per case, in order: anything else was not written by the harness.
+          if (done || event.name !== spec.cases[cases.length]?.name) {
+            return stop({ outcome: 'judge-error', error: 'The judge received a result it did not expect.' });
+          }
           cases.push(
             event.ok
               ? {
@@ -235,8 +261,12 @@ function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOpti
           );
           return watchCase();
         case 'done':
+          if (cases.length !== spec.cases.length) {
+            return stop({ outcome: 'judge-error', error: 'The judge received a result it did not expect.' });
+          }
           done = true;
-          return clearTimeout(timer);
+          // The harness exits right after; a thread the solution left running must not hold the run.
+          return watch(EXIT_GRACE_MS, () => stop({ outcome: 'ran', cases }));
       }
     };
 
@@ -244,10 +274,7 @@ function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOpti
 
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk: string) => {
-      outputBytes += Buffer.byteLength(chunk);
-      if (outputBytes > options.maxOutputBytes) {
-        return stop({ outcome: 'judge-error', error: 'The solution produced more output than the judge accepts.' });
-      }
+      if (!countOutput(chunk)) return;
       pending += chunk;
       const lines = pending.split('\n');
       pending = lines.pop() ?? '';
@@ -263,6 +290,7 @@ function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOpti
     });
     child.stderr.setEncoding('utf8');
     child.stderr.on('data', (chunk: string) => {
+      if (!countOutput(chunk)) return;
       if (stderr.length < JUDGE_LIMITS.maxErrorChars) stderr += chunk;
     });
 
@@ -306,7 +334,8 @@ function execute(launch: Launch, spec: RunSpec, cwd: string, options: RunnerOpti
         argTypes: spec.argTypes ?? null,
         returnType: spec.returnType ?? 'json',
         solutionPath: launch.solutionPath,
-        cases: spec.cases,
+        // Without the expected answers: Node compares, and the solution must not find them.
+        cases: spec.cases.map(withoutAnswer),
         limits: { stdout: JUDGE_LIMITS.maxStdoutChars, error: JUDGE_LIMITS.maxErrorChars },
       }),
     );
