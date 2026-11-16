@@ -45,6 +45,14 @@ export function HomePage() {
             </span>
           </Link>
         </li>
+        <li>
+          <Link className={styles.card} to="/arena">
+            <span className={styles.cardTitle}>LeetCode Arena</span>
+            <span className={styles.cardText}>
+              Solve coding problems in Python against a timer, with a local judge and spaced reviews.
+            </span>
+          </Link>
+        </li>
       </ul>
     </main>
   );
